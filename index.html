@@ -1106,8 +1106,74 @@ function App() {
   );
 }
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<App />);
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+
+    // Your Firebase Configuration
+    const firebaseConfig = {  
+      apiKey: "AIzaSyCEAoWW1iGQJz9cNJINvONIDaidXLkxK8s",  
+      authDomain: "impact-datatrak.firebaseapp.com",  
+      projectId: "impact-datatrak",  
+      storageBucket: "impact-datatrak.firebasestorage.app",  
+      messagingSenderId: "489513066612",  
+      appId: "1:489513066612:web:d8540498107aad77cff121"  
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    async function loadDashboardData() {
+        // Ensure your dashboard table has <tbody id="tableBody">
+        const tbody = document.getElementById('tableBody');
+        
+        if (!tbody) {
+            console.error("Could not find #tableBody in HTML");
+            return;
+        }
+
+        try {
+            // Fetch the documents from the 'Impacts' collection [1]
+            const querySnapshot = await getDocs(collection(db, "Impacts"));
+            
+            tbody.innerHTML = ""; 
+
+            if (querySnapshot.empty) {
+                tbody.innerHTML = "<tr><td colspan='6' style='text-align:center;'>No applications found.</td></tr>";
+                return;
+            }
+
+            // Populate the table with data from your intake form fields [1]
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                
+                let dateStr = 'N/A';
+                if (data.submittedAt && data.submittedAt.seconds) {
+                    dateStr = new Date(data.submittedAt.seconds * 1000).toLocaleString();
+                }
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${dateStr}</td>
+                        <td><strong>${data.fullName || 'N/A'}</strong></td>
+                        <td>${data.mStatus || 'N/A'}<br>${data.branch || ''}</td>
+                        <td>${data.email || 'N/A'}</td>
+                        <td>${data.mos || 'N/A'} (${data.payGrade || ''})</td>
+                        <td>${data.opportunities || 'N/A'}</td>
+                    </tr>
+                `;
+            });
+
+        } catch (error) {
+            console.error("Error loading dashboard data:", error);
+            tbody.innerHTML = `<tr><td colspan="6" style="color:red;">Error: ${error.message}</td></tr>`;
+        }
+    }
+
+    // Start the dashboard load
+    loadDashboardData();
 </script>
+
 </body>
 </html>

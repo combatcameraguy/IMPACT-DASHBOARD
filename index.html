@@ -763,12 +763,12 @@ function App() {
           <div className="flex items-end gap-3">
             <h1 className="text-4xl font-extrabold tracking-tight" style={{ color: theme.textPrimary, fontFamily: '"Gotham", "Montserrat", sans-serif' }}>IMPACT DataTrak</h1>
             <div className="flex flex-col pb-1">
-                <span className="text-sm font-medium text-gray-500">v5.1</span>
-                <div className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: theme.textSecondary }}>
-                    <div className={`w-2 h-2 rounded-full ${firebaseSynced ? 'bg-green-500' : 'bg-yellow-500 animate-pulse'}`}></div>
-                    {firebaseSynced ? 'Connected' : 'Syncing...'}
-                </div>
-            </div>
+    <span className="text-sm font-medium text-gray-500">v5.1</span>
+    <div className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: theme.textSecondary }}>
+        <div className="w-2 h-2 rounded-full bg-green-500"></div>
+        Connected
+    </div>
+</div>
           </div>
 
           <div className="flex flex-wrap gap-2">

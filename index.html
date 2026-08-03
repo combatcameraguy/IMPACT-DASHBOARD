@@ -399,8 +399,10 @@ function App() {
   const [authError, setAuthError] = useState('');
   const [firebaseSynced, setFirebaseSynced] = useState(false);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
-  // State for Firebase connection status
+  
+  // Firebase Connection Status Listener
   const [firebaseStatus, setFirebaseStatus] = useState('connecting');
+
   const [draggedTask, setDraggedTask] = useState(null);
   const [dragOverTask, setDragOverTask] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
@@ -483,6 +485,18 @@ textSecondary: '#6b7280'
 allThemes['None']) : allThemes['None'];
   const theme = settings.darkMode ? { ...baseTheme, background: '#2e2e2e', cardBg: 
 '#2e2e2e', textPrimary: '#f9fafb', textSecondary: '#d1d5db' } : baseTheme;
+  
+  // Connect to Firebase for Connection Status
+  useEffect(() => {
+    if (!database) return;
+    const connectedRef = database.ref(".info/connected");
+    const handleChange = (snap) => {
+      setFirebaseStatus(snap.val() ? 'online' : 'offline');
+    };
+    connectedRef.on('value', handleChange);
+    return () => connectedRef.off('value', handleChange);
+  }, []);
+
   const toggleGroup = (groupId) => setExpandedGroups(prev => ({ ...prev, [groupId]: !
 prev[groupId] }));
   const updateTask = (id, field, value) => {
@@ -672,17 +686,6 @@ URL.revokeObjectURL(url);
 { setUser(currentUser); setLoading(false); });
     return () => unsubscribe();
   }, []);
-  
-  // Firebase Connection Status Listener
-  useEffect(() => {
-    if (!database) return;
-    const connectedRef = database.ref(".info/connected");
-    const handleChange = (snap) => {
-      setFirebaseStatus(snap.val() ? 'online' : 'offline');
-    };
-    connectedRef.on('value', handleChange);
-    return () => connectedRef.off('value', handleChange);
-  }, []);
 
   useEffect(() => {
     if (user && database) {
@@ -690,7 +693,6 @@ URL.revokeObjectURL(url);
       let loadedCount = 0; const totalLoads = 7; // Increased load count for 
 customThemes
       const checkAllLoaded = () => { loadedCount++; if (loadedCount === totalLoads) 
-{ setFirebaseSynced(true); setInitialLoadComplete(true); } }; const checkAllLoaded = () => { loadedCount++; if (loadedCount === totalLoads) 
 { setFirebaseSynced(true); setInitialLoadComplete(true); } };
       const tasksRef = database.ref('userData/tasks');
       const tasksListener = tasksRef.on('value', (s) => { const d = s.val(); if (d) 
@@ -727,9 +729,6 @@ columnsRef.off('value', columnsListener); themesRef.off('value', themesListener)
 (user && database && initialLoadComplete) database.ref('userData/tasks').set(tasks); } 
 catch(e){} }, [tasks, user, initialLoadComplete]);
   useEffect(() => { try { localStorage.setItem('comcam_columnWidths_v5', 
-JSON.stringify(columnWidths)); if (user && database && initialLoadComplete) 
-database.ref('userData/columnWidths').set(columnWidths); } catch(e){} }, 
-[columnWidths, user, initialLoadComplete]); useEffect(() => { try { localStorage.setItem('comcam_columnWidths_v5', 
 JSON.stringify(columnWidths)); if (user && database && initialLoadComplete) 
 database.ref('userData/columnWidths').set(columnWidths); } catch(e){} }, 
 [columnWidths, user, initialLoadComplete]);
@@ -954,18 +953,12 @@ DataTrak</h1>
     <span className="text-sm font-medium text-gray-500">v5.1</span>
     <div className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: 
 theme.textSecondary }}>
-        <div 
-            className={`w-2 h-2 rounded-full ${
-                firebaseStatus === 'online' ? 'bg-green-500 animate-pulse' : 
-                firebaseStatus === 'offline' ? 'bg-red-500' : 
-                'bg-yellow-500 animate-bounce'
-            }`}
-        ></div>
-        <span>{
-            firebaseStatus === 'online' ? 'Connected to Firebase' : 
-            firebaseStatus === 'offline' ? 'Disconnected' : 
-            'Connecting...'
-        }</span>
+        <div className={`w-2 h-2 rounded-full animate-pulse ${
+            firebaseStatus === 'online' ? 'bg-green-500' : 
+            firebaseStatus === 'offline' ? 'bg-red-500' : 
+            'bg-yellow-500'
+        }`}></div>
+        <span>{firebaseStatus === 'online' ? 'Connected to Firebase' : firebaseStatus === 'offline' ? 'Disconnected' : 'Connecting...'}</span>
     </div>
 </div>
           </div>

@@ -1108,6 +1108,67 @@ function App() {
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(<App />);
+<script type="module">
+    // 1. Import Firebase Modules
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+
+    // 2. Paste your Firebase Configuration here if it isn't already in the file
+    const firebaseConfig = {  
+      apiKey: "AIzaSyCEAoWW1iGQJz9cNJINvONIDaidXLkxK8s",  
+      authDomain: "impact-datatrak.firebaseapp.com",  
+      projectId: "impact-datatrak",  
+      storageBucket: "impact-datatrak.firebasestorage.app",  
+      messagingSenderId: "489513066612",  
+      appId: "1:489513066612:web:d8540498107aad77cff121"  
+    };
+
+    // 3. Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // 4. Function to fetch and display data
+    async function loadDashboardData() {
+        // Select the table body from your dashboard structure [1]
+        const tbody = document.getElementById('tableBody');
+        
+        try {
+            // Fetch documents from the 'Impacts' collection (where your intake form saves data)
+            const querySnapshot = await getDocs(collection(db, "Impacts"));
+            
+            tbody.innerHTML = ""; // Clear the "Loading..." message
+            
+            if (querySnapshot.empty) {
+                tbody.innerHTML = "<tr><td colspan='6' style='text-align:center;'>No applications found.</td></tr>";
+                return;
+            }
+
+            // Loop through each document and create a table row
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                
+                // Create the row with specific form fields
+                const row = `
+                    <tr>
+                        <td>${data.submittedAt ? new Date(data.submittedAt.seconds * 1000).toLocaleString() : 'N/A'}</td>
+                        <td><strong>${data.fullName || 'N/A'}</strong></td>
+                        <td>${data.mStatus || 'N/A'}<br>${data.branch || ''}</td>
+                        <td>${data.email || 'N/A'}</td>
+                        <td>${data.mos || 'N/A'} (${data.payGrade || ''})</td>
+                        <td>${data.opportunities || 'N/A'}</td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+
+        } catch (error) {
+            console.error("Error loading dashboard data:", error);
+            tbody.innerHTML = "<tr><td colspan='6' style='color:red;'>Error connecting to database.</td></tr>";
+        }
+    }
+
+    // Run the function when the page loads
+    loadDashboardData();
 </script>
 </body>
 </html>

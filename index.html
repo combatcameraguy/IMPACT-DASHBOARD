@@ -1105,7 +1105,127 @@ function App() {
     </div>
   );
 }
+<!-- Status Light Styling & HTML -->
+<style>
+    .status-indicator {
+        display: inline-flex;
+        align-items: center;
+        font-size: 0.9rem;
+        padding: 10px 15px;
+        background-color: #f4f4f9;
+        border-radius: 5px;
+        margin-bottom: 15px;
+    }
+    .status-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background-color: #ccc;
+        margin-right: 10px;
+        transition: background-color 0.3s ease;
+    }
+    .status-dot.connected { background-color: #4CAF50; box-shadow: 0 0 8px #4CAF50; } /* Green for ready */
+    .status-dot.error { background-color: #f44336; } /* Red for errors */
+</style>
 
+<div class="container">
+    <!-- Connection Status Light -->
+    <div class="status-indicator">
+        <span class="status-dot connecting"></span>
+        <span id="connection-status-text">Connecting to Impact DataTrak...</span>
+    </div>
+
+    <!-- Dashboard Table -->
+    <h1>IMPACT DataTrak Dashboard</h1>
+    <table id="applicationsTable">
+        <thead>
+            <tr>
+                <th>Date Submitted</th>
+                <th>Name (from Form)</th>
+                <th>Status & Branch</th>
+                <th>Contact Info</th>
+                <th>MOS / Grade</th>
+                <th>Interest Area</th>
+            </tr>
+        </thead>
+        <!-- The tbody is populated by the script below -->
+        <tbody id="tableBody">
+            <tr><td colspan="6" style="text-align:center;">Waiting for data...</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- CORRECT FIREBASE COMMUNICATION CODE -->
+<script type="module">
+    // 1. Import required Firebase tools
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+    import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+
+    // 2. Paste your Firebase Configuration
+    const firebaseConfig = {  
+      apiKey: "AIzaSyCEAoWW1iGQJz9cNJINvONIDaidXLkxK8s",  
+      authDomain: "impact-datatrak.firebaseapp.com",  
+      projectId: "impact-datatrak",  
+      storageBucket: "impact-datatrak.firebasestorage.app",  
+      messagingSenderId: "489513066612",  
+      appId: "1:489513066612:web:d8540498107aad77cff121"  
+    };
+
+    // 3. Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Elements to update
+    const statusText = document.getElementById('connection-status-text');
+    const statusDot = document.querySelector('.status-dot');
+    const tableBody = document.getElementById('tableBody');
+
+    // 4. Listen for real-time updates from Firestore
+    // This sets up a permanent "listener" as requested
+    onSnapshot(collection(db, "Impacts"), (snapshot) => {
+        // Update Status Light to Connected/Ready
+        statusText.innerText = "Ready to listen for new entries created through the intake form.";
+        statusDot.className = 'status-dot connected';
+
+        // Clear existing table content
+        tableBody.innerHTML = "";
+
+        if (snapshot.empty) {
+            tableBody.innerHTML = "<tr><td colspan='6' style='text-align:center;'>No applications found yet.</td></tr>";
+            return;
+        }
+
+        // Process incoming documents [1]
+        snapshot.forEach((doc) => {
+            const data = doc.data();
+            
+            // Format Date if available
+            let dateStr = "N/A";
+            if (data.submittedAt && data.submittedAt.seconds) {
+                dateStr = new Date(data.submittedAt.seconds * 1000).toLocaleString();
+            }
+
+            // Create a new table row for this entry [1]
+            const row = `
+                <tr>
+                    <td>${dateStr}</td>
+                    <td><strong>${data.fullName || 'N/A'}</strong></td>
+                    <td>${data.mStatus || 'N/A'}<br>${data.branch || ''}</td>
+                    <td>${data.email || 'N/A'}</td>
+                    <td>${data.mos || 'N/A'} (${data.payGrade || ''})</td>
+                    <td>${data.opportunities || 'N/A'}</td>
+                </tr>
+            `;
+            tableBody.innerHTML += row;
+        });
+
+    }, (error) => {
+        // Handle Connection Errors
+        console.error("Dashboard connection failed:", error);
+        statusText.innerText = "Connection Error: " + error.message;
+        statusDot.className = 'status-dot error';
+        tableBody.innerHTML = `<tr><td colspan='6' style="color:red; text-align:center;">Error retrieving data.</td></tr>`;
+    });
 </script>
-</body>
+</body> 
 </html>

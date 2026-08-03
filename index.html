@@ -1106,58 +1106,8 @@ function App() {
   );
 }
 
-<!-- FIREBASE INTEGRATION -->
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
-
-    const firebaseConfig = {  
-      apiKey: "AIzaSyCEAoWW1iGQJz9cNJINvONIDaidXLkxK8s",  
-      authDomain: "impact-datatrak.firebaseapp.com",  
-      projectId: "impact-datatrak",  
-      storageBucket: "impact-datatrak.firebasestorage.app",  
-      messagingSenderId: "489513066612",  
-      appId: "1:489513066612:web:d8540498107aad77cff121"  
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    const form = document.getElementById('intakeForm');
-    const submitBtn = document.getElementById('submitBtn');
-    const statusMessage = document.getElementById('statusMessage');
-
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        // Reset status
-        statusMessage.style.color = "var(--impact-grey)";
-        statusMessage.textContent = "Submitting...";
-        
-        submitBtn.textContent = "Processing...";
-        submitBtn.disabled = true;
-
-        try {
-            const formData = new FormData(form);
-            const applicationData = Object.fromEntries(formData.entries());
-            applicationData.submittedAt = new Date();
-
-            await addDoc(collection(db, "Impacts"), applicationData);
-
-            // Success Message
-            statusMessage.style.color = "#2e7d32"; 
-            statusMessage.textContent = "Application successfully sent!";
-            
-            form.reset();
-
-        } catch (error) {
-            console.error("Submission failed:", error);
-            // Explicit Error handling as requested
-            statusMessage.style.color = "#d32f2f"; // Red color
-            statusMessage.textContent = "Error submitting application!"; 
-            submitBtn.disabled = false; // Re-enable button so they can retry
-        }
-    });
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
 </script>
 </body>
 </html>

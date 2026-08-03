@@ -38,8 +38,7 @@ input[type="date"]::-webkit-datetime-edit {
   input[type="date"] {
     min-height: 2.5em;
   }
-}
-tbody tr td > div {
+} tbody tr td > div {
   color: inherit;
 }
 .animate-scale-in,
@@ -64,7 +63,8 @@ tbody tr {
   transition: all 2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 tbody tr.calendar-expanded {
-  background: linear-gradient(to right, rgba(59, 130, 246, 0.08), rgba(59, 130, 246, 0.04)) !important;
+  background: linear-gradient(to right, rgba(59, 130, 246, 0.08), rgba(59, 130, 246, 
+0.04)) !important;
   box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.3);
 }
 tbody tr.calendar-expanded td {
@@ -84,26 +84,70 @@ tbody tr.calendar-expanded td > div {
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const { useState, useRef, useEffect, useCallback } = React;
-
-// Lucide Icons
-const ChevronDown = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6"/></svg>;
-const ChevronRight = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m9 18 6-6-6-6"/></svg>;
-const Plus = ({ size = 16 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14"/><path d="M12 5v14"/></svg>;
-const GripVertical = ({ size = 16 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="9" cy="12" r="1"/><circle cx="9" cy="5" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="19" r="1"/></svg>;
-const Trash2 = ({ size = 18 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>;
-const Edit2 = ({ size = 16 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>;
-const Save = ({ size = 16 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21H5a2 2 0 0 1-2 2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>;
-const Upload = ({ size = 16 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>;
-const Download = ({ size = 16 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>;
-const Settings = ({ size = 16 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>;
-const X = ({ size = 24 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>;
-const Calendar = ({ size = 16 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>;
-const User = ({ size = 16 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
-const BarChartIcon = ({ size = 16 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>;
-const PieChartIcon = ({ size = 16 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>;
-const Lock = ({ size = 64 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>;
-
+const { useState, useRef, useEffect, useCallback } = React; // Lucide Icons
+const ChevronDown = () => <svg width="20" height="20" viewBox="0 0 24 24" 
+fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6"/></svg>;
+const ChevronRight = () => <svg width="20" height="20" viewBox="0 0 24 24" 
+fill="none" stroke="currentColor" strokeWidth="2"><path d="m9 18 6-6-6-6"/></svg>;
+const Plus = ({ size = 16 }) => <svg width={size} height={size} viewBox="0 0 24 24" 
+fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14"/><path d="M12 
+5v14"/></svg>;
+const GripVertical = ({ size = 16 }) => <svg width={size} height={size} viewBox="0 0 24 
+24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="9" cy="12" r="1"/
+><circle cx="9" cy="5" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="12" 
+r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="19" r="1"/></svg>;
+const Trash2 = ({ size = 18 }) => <svg width={size} height={size} viewBox="0 0 24 24" 
+fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18"/><path d="M19 
+6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/
+><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></
+svg>;
+const Edit2 = ({ size = 16 }) => <svg width={size} height={size} viewBox="0 0 24 24" 
+fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 3a2.828 2.828 0 1 1 4 
+4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>;
+const Save = ({ size = 16 }) => <svg width={size} height={size} viewBox="0 0 24 24" 
+fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21H5a2 2 0 0 1-2 
+2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/
+><polyline points="7 3 7 8 15 8"/></svg>;
+const Upload = ({ size = 16 }) => <svg width={size} height={size} viewBox="0 0 24 24" 
+fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 
+2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" 
+y2="15"/></svg>;
+const Download = ({ size = 16 }) => <svg width={size} height={size} viewBox="0 0 24 
+24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 
+2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" 
+y1="15" y2="3"/></svg>;
+const Settings = ({ size = 16 }) => <svg width={size} height={size} viewBox="0 0 24 24" 
+fill="none" stroke="currentColor" strokeWidth="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 
+2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 
+0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 
+2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 
+0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 
+2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 
+1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 
+0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>;
+const X = ({ size = 24 }) => <svg width={size} height={size} viewBox="0 0 24 24" 
+fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6 6 18"/><path d="m6 
+6 12 12"/></svg>;
+const Calendar = ({ size = 16 }) => <svg width={size} height={size} viewBox="0 0 24 24" 
+fill="none" stroke="currentColor" strokeWidth="2"><rect width="18" height="18" x="3" 
+y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" 
+y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>; const Calendar = ({ size = 16 }) => <svg width={size} height={size} viewBox="0 0 24 24" 
+fill="none" stroke="currentColor" strokeWidth="2"><rect width="18" height="18" x="3" 
+y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" 
+y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>;
+const User = ({ size = 16 }) => <svg width={size} height={size} viewBox="0 0 24 24" 
+fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21v-2a4 4 0 0 
+0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
+const BarChartIcon = ({ size = 16 }) => <svg width={size} height={size} viewBox="0 0 24 
+24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="20" x2="18" 
+y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/
+></svg>;
+const PieChartIcon = ({ size = 16 }) => <svg width={size} height={size} viewBox="0 0 24 
+24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21.21 15.89A10 10 0 
+1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>;
+const Lock = ({ size = 64 }) => <svg width={size} height={size} viewBox="0 0 24 24" 
+fill="none" stroke="currentColor" strokeWidth="2"><rect width="18" height="11" x="3" 
+y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>;
 const renderIcon = (iconName) => {
   switch(iconName) {
     case 'User': return <User size={16}/>;
@@ -111,141 +155,181 @@ const renderIcon = (iconName) => {
     default: return null;
   }
 };
-
 const EditableHeader = ({ initialLabel, onSave, onCancel }) => {
     const [val, setVal] = useState(initialLabel);
     useEffect(() => { setVal(initialLabel); }, [initialLabel]);
     return (
-        <input 
+        <input
             autoFocus value={val} onChange={e => setVal(e.target.value)}
-            onBlur={() => { if(val.trim() && val !== initialLabel) { onSave(val.trim()); } else { onCancel(); } }}
-            onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); if (e.key === 'Escape') onCancel(); }}
-            className="text-black bg-white px-1 rounded text-sm w-full font-semibold border-b border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 shadow-sm"
+            onBlur={() => { if(val.trim() && val !== initialLabel) { onSave(val.trim()); } else 
+{ onCancel(); } }}
+            onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); if (e.key === 
+'Escape') onCancel(); }}
+            className="text-black bg-white px-1 rounded text-sm w-full font-semibold 
+border-b border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 shadow-
+sm"
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
         />
     )
 };
-
 const InlineCalendar = ({ value, onChange, darkMode, onToggle, isExpanded }) => {
   const parseSafeDate = (val) => {
       if (!val) return null;
       let d = new Date(val.includes('-') && val.length === 10 ? val + 'T00:00:00' : val);
-      return isNaN(d.getTime()) ? null : d;
-  };
+      return isNaN(d.getTime()) ? null : d; };
   const selectedDate = parseSafeDate(value);
   const [currentMonth, setCurrentMonth] = useState(selectedDate || new Date());
-
-  useEffect(() => { if (isExpanded && selectedDate) setCurrentMonth(selectedDate); }, [isExpanded, value]);
-
+  useEffect(() => { if (isExpanded && selectedDate) setCurrentMonth(selectedDate); }, 
+[isExpanded, value]);
   const formatDisplayDate = (dateStr) => {
       const d = parseSafeDate(dateStr);
       if (!d) return 'Select date';
-      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 
+'numeric' });
   };
-
   const getDaysInMonth = (date) => {
     const year = date.getFullYear(); const month = date.getMonth();
-    const firstDay = new Date(year, month, 1); const lastDay = new Date(year, month + 1, 0);
-    const daysInMonth = lastDay.getDate(); const startingDayOfWeek = firstDay.getDay();
+    const firstDay = new Date(year, month, 1); const lastDay = new Date(year, month + 1, 
+0);
+    const daysInMonth = lastDay.getDate(); const startingDayOfWeek = 
+firstDay.getDay();
     const days = [];
     for (let i = 0; i < startingDayOfWeek; i++) days.push(null);
     for (let i = 1; i <= daysInMonth; i++) days.push(i);
     return days;
   };
-
   const handleDayClick = (day) => {
     if (day) {
       const year = currentMonth.getFullYear(); const month = currentMonth.getMonth();
-      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-$
+{String(day).padStart(2, '0')}`;
       onChange(dateStr); onToggle();
     }
   };
-
-  const changeMonth = (delta) => { setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + delta, 1)); };
+  const changeMonth = (delta) => { setCurrentMonth(new 
+Date(currentMonth.getFullYear(), currentMonth.getMonth() + delta, 1)); };
   const days = getDaysInMonth(currentMonth);
-  const monthName = currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-  
+  const monthName = currentMonth.toLocaleDateString('en-US', { month: 'long', year: 
+'numeric' });
   return (
     <div className="w-full relative">
-      <button type="button" onClick={onToggle} className="border rounded px-3 py-2 text-sm hover:border-blue-400 focus:outline-none focus:border-blue-500 w-full text-left flex items-center justify-between" style={{ borderColor: isExpanded ? '#3b82f6' : (darkMode ? '#4a4a4a' : '#e5e7eb'), backgroundColor: darkMode ? '#3a3a3a' : '#ffffff', color: darkMode ? '#ffffff' : '#000000', fontSize: '14px', minHeight: '38px', boxShadow: isExpanded ? '0 0 0 3px rgba(59, 130, 246, 0.2)' : 'none', transition: 'all .2s ease' }}>
+      <button type="button" onClick={onToggle} className="border rounded px-3 py-2 
+text-sm hover:border-blue-400 focus:outline-none focus:border-blue-500 w-full text-left 
+flex items-center justify-between" style={{ borderColor: isExpanded ? '#3b82f6' : 
+(darkMode ? '#4a4a4a' : '#e5e7eb'), backgroundColor: darkMode ? '#3a3a3a' : '#ffffff', 
+color: darkMode ? '#ffffff' : '#000000', fontSize: '14px', minHeight: '38px', boxShadow: 
+isExpanded ? '0 0 0 3px rgba(59, 130, 246, 0.2)' : 'none', transition: 'all .2s ease' }}> <button type="button" onClick={onToggle} className="border rounded px-3 py-2 
+text-sm hover:border-blue-400 focus:outline-none focus:border-blue-500 w-full text-left 
+flex items-center justify-between" style={{ borderColor: isExpanded ? '#3b82f6' : 
+(darkMode ? '#4a4a4a' : '#e5e7eb'), backgroundColor: darkMode ? '#3a3a3a' : '#ffffff', 
+color: darkMode ? '#ffffff' : '#000000', fontSize: '14px', minHeight: '38px', boxShadow: 
+isExpanded ? '0 0 0 3px rgba(59, 130, 246, 0.2)' : 'none', transition: 'all .2s ease' }}>
         <span className="font-medium">{formatDisplayDate(value)}</span>
-        <div className="chevron-rotate" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}><ChevronDown /></div>
+        <div className="chevron-rotate" style={{ transform: isExpanded ? 
+'rotate(180deg)' : 'rotate(0deg)' }}><ChevronDown /></div>
       </button>
       {isExpanded && (
-        <div className="mt-1 rounded-lg shadow-xl border-2 z-50 absolute left-0 top-full" style={{ backgroundColor: darkMode ? '#2a2a2a' : '#ffffff', borderColor: '#3b82f6', padding: '16px', width: '360px', animation: 'slideDown 2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards' }}>
+        <div className="mt-1 rounded-lg shadow-xl border-2 z-50 absolute left-0 top-full" 
+style={{ backgroundColor: darkMode ? '#2a2a2a' : '#ffffff', borderColor: '#3b82f6', 
+padding: '16px', width: '360px', animation: 'slideDown 2s cubic-bezier(0.34, 1.56, 0.64, 
+1) forwards' }}>
           <div className="flex items-center justify-between mb-4">
-            <button type="button" onClick={() => changeMonth(-1)} className="p-2 rounded-lg hover:scale-110 transition-transform font-bold text-xl" style={{ backgroundColor: darkMode ? '#3a3a3a' : '#f3f4f6', color: darkMode ? '#ffffff' : '#000000' }}>&lt;</button>
-            <span className="font-bold text-lg" style={{ color: darkMode ? '#ffffff' : '#000000' }}>{monthName}</span>
-            <button type="button" onClick={() => changeMonth(1)} className="p-2 rounded-lg hover:scale-110 transition-transform font-bold text-xl" style={{ backgroundColor: darkMode ? '#3a3a3a' : '#f3f4f6', color: darkMode ? '#ffffff' : '#000000' }}>&gt;</button>
+            <button type="button" onClick={() => changeMonth(-1)} className="p-2 
+rounded-lg hover:scale-110 transition-transform font-bold text-xl" 
+style={{ backgroundColor: darkMode ? '#3a3a3a' : '#f3f4f6', color: darkMode ? '#ffffff' : 
+'#000000' }}>&lt;</button>
+            <span className="font-bold text-lg" style={{ color: darkMode ? '#ffffff' : 
+'#000000' }}>{monthName}</span>
+            <button type="button" onClick={() => changeMonth(1)} className="p-2 
+rounded-lg hover:scale-110 transition-transform font-bold text-xl" 
+style={{ backgroundColor: darkMode ? '#3a3a3a' : '#f3f4f6', color: darkMode ? '#ffffff' : 
+'#000000' }}>&gt;</button>
           </div>
           <div className="grid grid-cols-7 gap-1 mb-2">
-            {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => <div key={day} className="text-center font-bold text-xs" style={{ color: darkMode ? '#9ca3af' : '#6b7280' }}>{day}</div>)}
+            {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => <div key={day} 
+className="text-center font-bold text-xs" style={{ color: darkMode ? '#9ca3af' : 
+'#6b7280' }}>{day}</div>)}
           </div>
           <div className="grid grid-cols-7 gap-1">
             {days.map((day, idx) => {
               if (!day) return <div key={idx} />;
-              const isSelected = selectedDate && selectedDate.getDate() === day && selectedDate.getMonth() === currentMonth.getMonth() && selectedDate.getFullYear() === currentMonth.getFullYear();
-              return <button key={idx} type="button" onClick={() => handleDayClick(day)} className="rounded-lg text-sm font-semibold transition-all duration-2000 hover:scale-110 hover:shadow-md" style={{ padding: '8px', backgroundColor: isSelected ? '#3b82f6' : (darkMode ? '#3a3a3a' : '#f9fafb'), color: isSelected ? '#ffffff' : (darkMode ? '#ffffff' : '#000000'), border: isSelected ? '2px solid #2563eb' : '1px solid ' + (darkMode ? '#4a4a4a' : '#e5e7eb') }}>{day}</button>;
+              const isSelected = selectedDate && selectedDate.getDate() === day && 
+selectedDate.getMonth() === currentMonth.getMonth() && selectedDate.getFullYear() 
+=== currentMonth.getFullYear();
+              return <button key={idx} type="button" onClick={() => handleDayClick(day)} 
+className="rounded-lg text-sm font-semibold transition-all duration-2000 
+hover:scale-110 hover:shadow-md" style={{ padding: '8px', backgroundColor: 
+isSelected ? '#3b82f6' : (darkMode ? '#3a3a3a' : '#f9fafb'), color: isSelected ? '#ffffff' : 
+(darkMode ? '#ffffff' : '#000000'), border: isSelected ? '2px solid #2563eb' : '1px solid ' + 
+(darkMode ? '#4a4a4a' : '#e5e7eb') }}>{day}</button>;
             })}
           </div>
         </div>
       )}
     </div>
   );
-};
-
-const SimpleBarChart = ({ data, theme }) => {
+}; const SimpleBarChart = ({ data, theme }) => {
     const keys = Object.keys(data);
-    if (keys.length === 0) return <div className="text-gray-500 italic p-4 text-center">No data available to chart</div>;
+    if (keys.length === 0) return <div className="text-gray-500 italic p-4 text-center">No 
+data available to chart</div>;
     const max = Math.max(...Object.values(data), 1);
-    
     return (
-        <div className="flex items-end justify-around gap-2 h-48 w-full border-b pb-2 px-2 pt-6" style={{ borderColor: theme.darkMode ? '#4a4a4a' : '#e5e7eb' }}>
+        <div className="flex items-end justify-around gap-2 h-48 w-full border-b pb-2 
+px-2 pt-6" style={{ borderColor: theme.darkMode ? '#4a4a4a' : '#e5e7eb' }}>
             {keys.map(key => (
-                <div key={key} className="flex flex-col items-center justify-end w-full group relative" style={{ height: '100%' }}>
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-8 bg-gray-800 text-white text-xs rounded px-2 py-1 z-10 pointer-events-none whitespace-nowrap">
+                <div key={key} className="flex flex-col items-center justify-end w-full group 
+relative" style={{ height: '100%' }}>
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity 
+absolute -top-8 bg-gray-800 text-white text-xs rounded px-2 py-1 z-10 pointer-events-
+none whitespace-nowrap">
                         {key}: {data[key]}
                     </div>
-                    <div className="w-full rounded-t transition-all duration-1000 ease-out hover:opacity-80" 
-                         style={{ height: `${(data[key] / max) * 100}%`, backgroundColor: theme.primary, minHeight: data[key] > 0 ? '4px' : '0' }}>
+                    <div className="w-full rounded-t transition-all duration-1000 ease-out 
+hover:opacity-80" 
+                         style={{ height: `${(data[key] / max) * 100}%`, backgroundColor: 
+theme.primary, minHeight: data[key] > 0 ? '4px' : '0' }}>
                     </div>
-                    <div className="text-[10px] truncate w-full text-center mt-2 font-medium" style={{ color: theme.textSecondary }} title={key}>{key}</div>
+                    <div className="text-[10px] truncate w-full text-center mt-2 font-medium" 
+style={{ color: theme.textSecondary }} title={key}>{key}</div>
                 </div>
             ))}
         </div>
     )
 };
-
 const SimplePieChart = ({ data, colors, theme }) => {
     const keys = Object.keys(data);
-    if (keys.length === 0) return <div className="text-gray-500 italic p-4 text-center">No data available to chart</div>;
-    
+    if (keys.length === 0) return <div className="text-gray-500 italic p-4 text-center">No 
+data available to chart</div>;
     const total = Object.values(data).reduce((a, b) => a + b, 0);
     let start = 0;
-    
     const gradients = keys.map((key) => {
         const percent = (data[key] / total) * 100;
         const color = colors[key] || '#9ca3af';
         const str = `${color} ${start}% ${start + percent}%`;
         start += percent;
         return str;
-    }).join(', ');
-
-    return (
+    }).join(', '); return (
         <div className="flex flex-col md:flex-row items-center gap-8">
-            <div style={{ width: '220px', height: '220px', borderRadius: '50%', background: `conic-gradient(${gradients})`, boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }} className="flex-shrink-0 animate-scale-in" />
+            <div style={{ width: '220px', height: '220px', borderRadius: '50%', background: 
+`conic-gradient(${gradients})`, boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }} 
+className="flex-shrink-0 animate-scale-in" />
             <div className="flex flex-col gap-2 w-full max-h-48 overflow-y-auto pr-2">
                 {keys.map(key => {
                     const percent = Math.round((data[key] / total) * 100);
                     return (
-                        <div key={key} className="flex items-center justify-between p-2 rounded-lg" style={{ backgroundColor: theme.darkMode ? '#3a3a3a' : '#f9fafb' }}>
+                        <div key={key} className="flex items-center justify-between p-2 
+rounded-lg" style={{ backgroundColor: theme.darkMode ? '#3a3a3a' : '#f9fafb' }}>
                             <div className="flex items-center gap-2">
-                                <div className="w-4 h-4 rounded-full" style={{ backgroundColor: colors[key] || '#9ca3af' }}></div>
-                                <span className="font-medium text-sm" style={{ color: theme.textPrimary }}>{key || 'Unspecified'}</span>
+                                <div className="w-4 h-4 rounded-full" style={{ backgroundColor: 
+colors[key] || '#9ca3af' }}></div>
+                                <span className="font-medium text-sm" style={{ color: 
+theme.textPrimary }}>{key || 'Unspecified'}</span>
                             </div>
                             <div className="flex items-center gap-3">
-                                <span className="text-sm font-bold" style={{ color: theme.textPrimary }}>{data[key]}</span>
-                                <span className="text-xs text-gray-500 w-8 text-right">{percent}%</span>
+                                <span className="text-sm font-bold" style={{ color: 
+theme.textPrimary }}>{data[key]}</span>
+                                <span className="text-xs text-gray-500 w-8 text-right">{percent}
+%</span>
                             </div>
                         </div>
                     )
@@ -254,7 +338,6 @@ const SimplePieChart = ({ data, colors, theme }) => {
         </div>
     );
 };
-
 // FIREBASE CONFIGURATION
 const firebaseConfig = {
   apiKey: "AIzaSyCEAoWW1iGQJz9cNJINvONIDaidXLkxK8s",
@@ -265,18 +348,15 @@ const firebaseConfig = {
   appId: "1:489513066612:web:d8540498107aad77cff121",
   databaseURL: "https://impact-datatrak-default-rtdb.firebaseio.com"
 };
-
 let database;
 let auth;
 try {
   firebase.initializeApp(firebaseConfig);
-  database = firebase.database();
-  auth = firebase.auth();
+  database = firebase.database(); auth = firebase.auth();
   console.log('Firebase initialized successfully');
 } catch (error) {
   console.error('Firebase initialization error:', error);
 }
-
 const getTextColor = (bgColor) => {
   if(!bgColor) return '#ffffff';
   const hex = bgColor.replace('#', '');
@@ -286,21 +366,40 @@ const getTextColor = (bgColor) => {
   const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
   return luminance > 0.5 ? '#1f2937' : '#ffffff';
 };
-
 const defaultThemes = {
-  'None': { name: 'None', background: '#ffffff', cardBg: '#ffffff', primary: '#A4243B', secondary: '#D8C99B', accent: '#D8973C', highlight: '#BD632F', dark: '#273E47', textPrimary: '#1f2937', textSecondary: '#6b7280' },
-  'Cherry Blossom': { name: 'Cherry Blossom', background: '#FFF5F7', cardBg: '#ffffff', primary: '#A4243B', secondary: '#D8C99B', accent: '#D8973C', highlight: '#BD632F', dark: '#273E47', textPrimary: '#1f2937', textSecondary: '#6b7280' },
-  'Ocean Bliss': { name: 'Ocean Bliss', background: '#FFFDF7', cardBg: '#FFFDF7', primary: '#0A2342', secondary: '#2CA58D', accent: '#84BC9C', highlight: '#F46197', dark: '#0A2342', textPrimary: '#1f2937', textSecondary: '#6b7280' },
-  'Lavender Dream': { name: 'Lavender Dream', background: '#F8F7FF', cardBg: '#ffffff', primary: '#6B5B95', secondary: '#B8A9C9', accent: '#88B0D3', highlight: '#E8B4B8', dark: '#4A4063', textPrimary: '#1f2937', textSecondary: '#6b7280' },
-  'Sunset Glow': { name: 'Sunset Glow', background: '#FFF8F3', cardBg: '#ffffff', primary: '#FF6B6B', secondary: '#FFB84D', accent: '#FF8E53', highlight: '#A8E6CF', dark: '#4A4A4A', textPrimary: '#1f2937', textSecondary: '#6b7280' },
-  'Forest Mist': { name: 'Forest Mist', background: '#F5F9F6', cardBg: '#ffffff', primary: '#2D5F3F', secondary: '#6B9080', accent: '#A4C3A2', highlight: '#EAE7DC', dark: '#1B3A2C', textPrimary: '#1f2937', textSecondary: '#6b7280' },
-  'Bubblegum Fantasy': { name: 'Bubblegum Fantasy', background: '#F0F6F6', cardBg: '#ffffff', primary: '#084B83', secondary: '#42BFDD', accent: '#BBE6E4', highlight: '#FF66B3', dark: '#084B83', textPrimary: '#1f2937', textSecondary: '#6b7280' },
-  'Deep Sea Adventure': { name: 'Deep Sea Adventure', background: '#E8F4F8', cardBg: '#ffffff', primary: '#173753', secondary: '#6DAEDB', accent: '#2892D7', highlight: '#1B4353', dark: '#173753', textPrimary: '#1f2937', textSecondary: '#6b7280' },
-  'Fresh Forest Foliage': { name: 'Fresh Forest Foliage', background: '#F5FAF7', cardBg: '#ffffff', primary: '#283F3B', secondary: '#99DDC8', accent: '#95BF74', highlight: '#6B8E23', dark: '#283F3B', textPrimary: '#1f2937', textSecondary: '#6b7280' },
-  'Golden Spice': { name: 'Golden Spice', background: '#FFF9F0', cardBg: '#ffffff', primary: '#45050C', secondary: '#EECF6D', accent: '#D5AC4E', highlight: '#8B6220', dark: '#45050C', textPrimary: '#1f2937', textSecondary: '#6b7280' },
-  'Tropical Fusion': { name: 'Tropical Fusion', background: '#FFFBF5', cardBg: '#ffffff', primary: '#392F5A', secondary: '#FF8811', accent: '#F4D06F', highlight: '#9DD9D2', dark: '#392F5A', textPrimary: '#1f2937', textSecondary: '#6b7280' }
+  'None': { name: 'None', background: '#ffffff', cardBg: '#ffffff', primary: '#A4243B', 
+secondary: '#D8C99B', accent: '#D8973C', highlight: '#BD632F', dark: '#273E47', 
+textPrimary: '#1f2937', textSecondary: '#6b7280' },
+  'Cherry Blossom': { name: 'Cherry Blossom', background: '#FFF5F7', cardBg: '#ffffff', 
+primary: '#A4243B', secondary: '#D8C99B', accent: '#D8973C', highlight: '#BD632F', dark: 
+'#273E47', textPrimary: '#1f2937', textSecondary: '#6b7280' },
+  'Ocean Bliss': { name: 'Ocean Bliss', background: '#FFFDF7', cardBg: '#FFFDF7', 
+primary: '#0A2342', secondary: '#2CA58D', accent: '#84BC9C', highlight: '#F46197', 
+dark: '#0A2342', textPrimary: '#1f2937', textSecondary: '#6b7280' },
+  'Lavender Dream': { name: 'Lavender Dream', background: '#F8F7FF', cardBg: '#ffffff', 
+primary: '#6B5B95', secondary: '#B8A9C9', accent: '#88B0D3', highlight: '#E8B4B8', 
+dark: '#4A4063', textPrimary: '#1f2937', textSecondary: '#6b7280' },
+  'Sunset Glow': { name: 'Sunset Glow', background: '#FFF8F3', cardBg: '#ffffff', primary: 
+'#FF6B6B', secondary: '#FFB84D', accent: '#FF8E53', highlight: '#A8E6CF', dark: 
+'#4A4A4A', textPrimary: '#1f2937', textSecondary: '#6b7280' },
+  'Forest Mist': { name: 'Forest Mist', background: '#F5F9F6', cardBg: '#ffffff', primary: 
+'#2D5F3F', secondary: '#6B9080', accent: '#A4C3A2', highlight: '#EAE7DC', dark: 
+'#1B3A2C', textPrimary: '#1f2937', textSecondary: '#6b7280' },
+  'Bubblegum Fantasy': { name: 'Bubblegum Fantasy', background: '#F0F6F6', cardBg: 
+'#ffffff', primary: '#084B83', secondary: '#42BFDD', accent: '#BBE6E4', highlight: 
+'#FF66B3', dark: '#084B83', textPrimary: '#1f2937', textSecondary: '#6b7280' },
+  'Deep Sea Adventure': { name: 'Deep Sea Adventure', background: '#E8F4F8', cardBg: 
+'#ffffff', primary: '#173753', secondary: '#6DAEDB', accent: '#2892D7', highlight: 
+'#1B4353', dark: '#173753', textPrimary: '#1f2937', textSecondary: '#6b7280' },
+  'Fresh Forest Foliage': { name: 'Fresh Forest Foliage', background: '#F5FAF7', cardBg: 
+'#ffffff', primary: '#283F3B', secondary: '#99DDC8', accent: '#95BF74', highlight: 
+'#6B8E23', dark: '#283F3B', textPrimary: '#1f2937', textSecondary: '#6b7280' },
+  'Golden Spice': { name: 'Golden Spice', background: '#FFF9F0', cardBg: '#ffffff', 
+primary: '#45050C', secondary: '#EECF6D', accent: '#D5AC4E', highlight: '#8B6220', 
+dark: '#45050C', textPrimary: '#1f2937', textSecondary: '#6b7280' }, 'Tropical Fusion': { name: 'Tropical Fusion', background: '#FFFBF5', cardBg: '#ffffff', 
+primary: '#392F5A', secondary: '#FF8811', accent: '#F4D06F', highlight: '#9DD9D2', 
+dark: '#392F5A', textPrimary: '#1f2937', textSecondary: '#6b7280' }
 };
-
 function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -309,30 +408,30 @@ function App() {
   const [authError, setAuthError] = useState('');
   const [firebaseSynced, setFirebaseSynced] = useState(false);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+  // State for Firebase connection status
+  const [firebaseStatus, setFirebaseStatus] = useState('connecting');
   const [draggedTask, setDraggedTask] = useState(null);
   const [dragOverTask, setDragOverTask] = useState(null);
-  const [deleteConfirm, setDeleteConfirm] = useState(null); 
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [draggedColumn, setDraggedColumn] = useState(null);
   const [dragOverColumn, setDragOverColumn] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [expandedDropdown, setExpandedDropdown] = useState(null);
-  const [editingHeader, setEditingHeader] = useState(null); 
-  
+  const [editingHeader, setEditingHeader] = useState(null);
   const [showCustomThemeCreator, setShowCustomThemeCreator] = useState(false);
-  
   const loadFromStorage = (key, defaultValue) => {
-    try { const saved = localStorage.getItem(key); return saved ? JSON.parse(saved) : defaultValue; }
+    try { const saved = localStorage.getItem(key); return saved ? JSON.parse(saved) : 
+defaultValue; }
     catch (error) { return defaultValue; }
   };
-
   const initialColumnsDef = {
     timestamp: { label: 'Timestamp', icon: 'Calendar' },
     fullName: { label: 'Full Name', icon: 'User' },
     phone: { label: 'Phone Number', icon: 'none' },
     email: { label: 'Email Address', icon: 'none' },
     currentStatus: { label: 'Current Status', icon: 'none' },
-    branchOfService: { label: 'Branch of Service', icon: 'none' }, 
+    branchOfService: { label: 'Branch of Service', icon: 'none' },
     agreeToContact: { label: 'Agree to Contact', icon: 'none' },
     mos: { label: 'MOS / Job Specialty', icon: 'none' },
     payGrade: { label: 'Pay Grade', icon: 'none' },
@@ -341,102 +440,100 @@ function App() {
     location: { label: 'Location (City, State)', icon: 'none' },
     transportation: { label: 'Reliable Transportation?', icon: 'none' },
     opportunities: { label: 'Opportunities Interested In', icon: 'none' },
-    skills: { label: 'Skills/Experience', icon: 'none' },
-    areasOfInterest: { label: 'Areas of Interest', icon: 'none' },
+    skills: { label: 'Skills/Experience', icon: 'none' }, areasOfInterest: { label: 'Areas of Interest', icon: 'none' },
     availability: { label: 'Availability/Limitations', icon: 'none' },
     pipelineStatus: { label: 'Pipeline Status', icon: 'none' },
     drag: { label: '', icon: 'none' },
     actions: { label: '', icon: 'none' }
   };
-
   const initialWidths = {
-    timestamp: 150, fullName: 200, phone: 150, email: 200, currentStatus: 180, branchOfService: 180, agreeToContact: 150, mos: 200, payGrade: 120, etsDate: 150, terminalLeave: 150, location: 180, transportation: 180, opportunities: 250, skills: 250, areasOfInterest: 250, availability: 250, pipelineStatus: 150, drag: 50, actions: 80
+    timestamp: 150, fullName: 200, phone: 150, email: 200, currentStatus: 180, 
+branchOfService: 180, agreeToContact: 150, mos: 200, payGrade: 120, etsDate: 150, 
+terminalLeave: 150, location: 180, transportation: 180, opportunities: 250, skills: 250, 
+areasOfInterest: 250, availability: 250, pipelineStatus: 150, drag: 50, actions: 80
   };
-
   const defaultColumnOrder = [
-    'drag', 'fullName', 'branchOfService', 'email', 'phone', 'timestamp', 'agreeToContact', 'mos', 'payGrade', 'etsDate', 'terminalLeave', 'location', 'transportation', 'opportunities', 'skills', 'areasOfInterest', 'availability', 'currentStatus', 'actions'
+    'drag', 'fullName', 'branchOfService', 'email', 'phone', 'timestamp', 'agreeToContact', 
+'mos', 'payGrade', 'etsDate', 'terminalLeave', 'location', 'transportation', 'opportunities', 
+'skills', 'areasOfInterest', 'availability', 'currentStatus', 'actions'
   ];
-
-  const [columns, setColumns] = useState(() => loadFromStorage('comcam_columns_v5', initialColumnsDef));
+  const [columns, setColumns] = useState(() => 
+loadFromStorage('comcam_columns_v5', initialColumnsDef));
   const [tasks, setTasks] = useState(() => loadFromStorage('comcam_tasks', []));
-  const [columnWidths, setColumnWidths] = useState(() => loadFromStorage('comcam_columnWidths_v5', initialWidths));
-  const [columnOrder, setColumnOrder] = useState(() => loadFromStorage('comcam_columnOrder_v5', defaultColumnOrder));
-  const [expandedGroups, setExpandedGroups] = useState(() => loadFromStorage('comcam_expandedGroups', { group1: true, group2: true }));
-  const [settings, setSettings] = useState(() => loadFromStorage('comcam_settings', { darkMode: false, useTheme: false, colorTheme: 'None' }));
-  
+  const [columnWidths, setColumnWidths] = useState(() => 
+loadFromStorage('comcam_columnWidths_v5', initialWidths));
+  const [columnOrder, setColumnOrder] = useState(() => 
+loadFromStorage('comcam_columnOrder_v5', defaultColumnOrder));
+  const [expandedGroups, setExpandedGroups] = useState(() => 
+loadFromStorage('comcam_expandedGroups', { group1: true, group2: true }));
+  const [settings, setSettings] = useState(() => loadFromStorage('comcam_settings', 
+{ darkMode: false, useTheme: false, colorTheme: 'None' }));
   // Custom Themes loaded dynamically and persistently
-  const [customThemes, setCustomThemes] = useState(() => loadFromStorage('comcam_customThemes', {}));
+  const [customThemes, setCustomThemes] = useState(() => 
+loadFromStorage('comcam_customThemes', {}));
   const [customTheme, setCustomTheme] = useState({
-    name: '', background: '#ffffff', cardBg: '#ffffff', primary: '#3b82f6', secondary: '#8b5cf6', accent: '#10b981', highlight: '#f59e0b', dark: '#1f2937', textPrimary: '#1f2937', textSecondary: '#6b7280'
+    name: '', background: '#ffffff', cardBg: '#ffffff', primary: '#3b82f6', secondary: '#8b5cf6', 
+accent: '#10b981', highlight: '#f59e0b', dark: '#1f2937', textPrimary: '#1f2937', 
+textSecondary: '#6b7280'
   });
-  
   const allThemes = { ...defaultThemes, ...customThemes };
-
   const [resizingColumn, setResizingColumn] = useState(null);
-  
   const resizeStartX = useRef(0);
-  const resizeStartWidth = useRef(0);
-
-  const branchColors = { 
-      'Army': '#4B5320',         
-      'Navy': '#000080',         
-      'Air Force': '#00308F',    
-      'Marines': '#990000',      
-      'Coast Guard': '#00529B',  
-      'Space Force': '#000000',  
-      'Not started': '#9ca3af'   
+  const resizeStartWidth = useRef(0); const branchColors = {
+      'Army': '#4B5320',
+      'Navy': '#000080',
+      'Air Force': '#00308F',
+      'Marines': '#990000',
+      'Coast Guard': '#00529B',
+      'Space Force': '#000000',
+      'Not started': '#9ca3af'
   };
-  
-  const baseTheme = settings.useTheme ? (allThemes[settings.colorTheme] || allThemes['None']) : allThemes['None'];
-  const theme = settings.darkMode ? { ...baseTheme, background: '#2e2e2e', cardBg: '#2e2e2e', textPrimary: '#f9fafb', textSecondary: '#d1d5db' } : baseTheme;
-
-  const toggleGroup = (groupId) => setExpandedGroups(prev => ({ ...prev, [groupId]: !prev[groupId] }));
-
+  const baseTheme = settings.useTheme ? (allThemes[settings.colorTheme] || 
+allThemes['None']) : allThemes['None'];
+  const theme = settings.darkMode ? { ...baseTheme, background: '#2e2e2e', cardBg: 
+'#2e2e2e', textPrimary: '#f9fafb', textSecondary: '#d1d5db' } : baseTheme;
+  const toggleGroup = (groupId) => setExpandedGroups(prev => ({ ...prev, [groupId]: !
+prev[groupId] }));
   const updateTask = (id, field, value) => {
     setTasks(prev => prev.map(task => {
       if (task.id === id) {
         const updatedTask = {...task, [field]: value };
         if (field === 'pipelineStatus') {
           if (value === 'Done') updatedTask.group = 'group2';
-          else if (task.pipelineStatus === 'Done' && value !== 'Done') updatedTask.group = 'group1';
+          else if (task.pipelineStatus === 'Done' && value !== 'Done') updatedTask.group = 
+'group1';
         }
         return updatedTask;
       }
       return task;
     }));
   };
-
   const confirmDelete = (task) => { setDeleteConfirm(task); };
-  const deleteTask = (id) => { setTasks(prev => prev.filter(task => task.id !== id)); setDeleteConfirm(null); };
-
+  const deleteTask = (id) => { setTasks(prev => prev.filter(task => task.id !== id)); 
+setDeleteConfirm(null); };
   const addTask = (groupId) => {
     const newTask = {
       id: Math.max(...(tasks.length ? tasks.map(t => t.id) : [0]), 0) + 1,
-      group: groupId, 
-      branchOfService: 'Not started', 
+      group: groupId,
+      branchOfService: 'Not started',
       fullName: 'New User',
       timestamp: new Date().toISOString().split('T')[0]
     };
-    setTasks(prev => [...prev, newTask]);
-  };
-
+    setTasks(prev => [...prev, newTask]); };
   const handleAddColumn = () => {
     const name = prompt("Enter a name for the new column:");
     if (!name || !name.trim()) return;
-    
     const newKey = 'custom_' + Date.now();
     setColumns(prev => ({ ...prev, [newKey]: { label: name.trim(), icon: 'none' } }));
     setColumnWidths(prev => ({ ...prev, [newKey]: 150 }));
-    
     setColumnOrder(prev => {
         const newOrder = [...prev];
         const actionIdx = newOrder.indexOf('actions');
-        if (actionIdx !== -1) { newOrder.splice(actionIdx, 0, newKey); } 
+        if (actionIdx !== -1) { newOrder.splice(actionIdx, 0, newKey); }
         else { newOrder.push(newKey); }
         return newOrder;
     });
   };
-
   const formatToYYYYMMDD = (raw) => {
     if (!raw) return '';
     let d = raw.trim().split(' ')[0];
@@ -450,31 +547,26 @@ function App() {
     }
     return d;
   };
-
   const parseCSV = (text) => {
     const result = [];
     let row = [];
     let inQuotes = false;
     let currentValue = '';
-    
     for (let i = 0; i < text.length; i++) {
         const char = text[i];
         if (char === '"') {
-            if (inQuotes && text[i+1] === '"') { currentValue += '"'; i++; } 
+            if (inQuotes && text[i+1] === '"') { currentValue += '"'; i++; }
             else { inQuotes = !inQuotes; }
         } else if (char === ',' && !inQuotes) {
             row.push(currentValue); currentValue = '';
-        } else if ((char === '\n' || char === '\r') && !inQuotes) {
-            if (char === '\r' && text[i+1] === '\n') i++; 
+        } else if ((char === '\n' || char === '\r') && !inQuotes) { if (char === '\r' && text[i+1] === '\n') i++;
             row.push(currentValue);
             if (row.some(val => val.trim() !== '')) result.push(row);
             row = []; currentValue = '';
         } else { currentValue += char; }
     }
-    
     if (currentValue || row.length > 0) { row.push(currentValue); result.push(row); }
     if (result.length < 2) return [];
-    
     const headers = result[0].map(h => h.trim());
     return result.slice(1).map(rowArray => {
         const obj = {};
@@ -482,49 +574,58 @@ function App() {
         return obj;
     });
   };
-
   const handleFileLoad = (event) => {
     const file = event.target.files[0];
     if (!file) return;
-
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
         const content = e.target.result;
         const isCSV = file.name.toLowerCase().endsWith('.csv');
-
         if (isCSV) {
           const parsedData = parseCSV(content);
           const newTasks = parsedData.map((row, index) => {
-            const ts = formatToYYYYMMDD(row['Timestamp'] || new Date().toISOString().split('T')[0]);
-            const etsDateStr = formatToYYYYMMDD(row[Object.keys(row).find(k => k.toLowerCase().includes('ets'))] || '');
-            const terminalLeaveStr = formatToYYYYMMDD(row[Object.keys(row).find(k => k.toLowerCase().includes('terminal leave'))] || '');
-
+            const ts = formatToYYYYMMDD(row['Timestamp'] || new 
+Date().toISOString().split('T')[0]);
+            const etsDateStr = formatToYYYYMMDD(row[Object.keys(row).find(k => 
+k.toLowerCase().includes('ets'))] || '');
+            const terminalLeaveStr = formatToYYYYMMDD(row[Object.keys(row).find(k => 
+k.toLowerCase().includes('terminal leave'))] || '');
             return {
                 id: Math.max(...(tasks.length ? tasks.map(t => t.id) : [0]), 0) + index + 1,
                 group: 'group1',
                 timestamp: ts,
-                fullName: row[Object.keys(row).find(k => k.toLowerCase().includes('name'))] || '',
-                phone: row[Object.keys(row).find(k => k.toLowerCase().includes('phone'))] || '',
-                email: row[Object.keys(row).find(k => k.toLowerCase().includes('email'))] || '',
-                currentStatus: row[Object.keys(row).find(k => k.toLowerCase().includes('current status'))] || '',
-                branchOfService: row[Object.keys(row).find(k => k.toLowerCase().includes('branch'))] || 'Not started',
-                agreeToContact: row[Object.keys(row).find(k => k.toLowerCase().includes('agree'))] || '',
+                fullName: row[Object.keys(row).find(k => k.toLowerCase().includes('name'))] 
+|| '',
+                phone: row[Object.keys(row).find(k => k.toLowerCase().includes('phone'))] || 
+'',
+                email: row[Object.keys(row).find(k => k.toLowerCase().includes('email'))] || '', currentStatus: row[Object.keys(row).find(k => 
+k.toLowerCase().includes('current status'))] || '',
+                branchOfService: row[Object.keys(row).find(k => 
+k.toLowerCase().includes('branch'))] || 'Not started',
+                agreeToContact: row[Object.keys(row).find(k => 
+k.toLowerCase().includes('agree'))] || '',
                 mos: row[Object.keys(row).find(k => k.toLowerCase().includes('mos'))] || '',
-                payGrade: row[Object.keys(row).find(k => k.toLowerCase().includes('pay grade'))] || '',
+                payGrade: row[Object.keys(row).find(k => k.toLowerCase().includes('pay 
+grade'))] || '',
                 etsDate: etsDateStr,
                 terminalLeave: terminalLeaveStr,
-                location: row[Object.keys(row).find(k => k.toLowerCase().includes('city, state'))] || '',
-                transportation: row[Object.keys(row).find(k => k.toLowerCase().includes('transportation'))] || '',
-                opportunities: row[Object.keys(row).find(k => k.toLowerCase().includes('opportunities'))] || '',
+                location: row[Object.keys(row).find(k => k.toLowerCase().includes('city, 
+state'))] || '',
+                transportation: row[Object.keys(row).find(k => 
+k.toLowerCase().includes('transportation'))] || '',
+                opportunities: row[Object.keys(row).find(k => 
+k.toLowerCase().includes('opportunities'))] || '',
                 skills: row[Object.keys(row).find(k => k.toLowerCase().includes('skills'))] || '',
-                areasOfInterest: row[Object.keys(row).find(k => k.toLowerCase().includes('areas'))] || '',
-                availability: row[Object.keys(row).find(k => k.toLowerCase().includes('availability'))] || '',
+                areasOfInterest: row[Object.keys(row).find(k => 
+k.toLowerCase().includes('areas'))] || '',
+                availability: row[Object.keys(row).find(k => 
+k.toLowerCase().includes('availability'))] || '',
             };
           });
-          
           setTasks(prev => [...prev, ...newTasks]);
-          alert(`CSV loaded successfully!\n\nImported ${newTasks.length} intake forms to your INBOX.`);
+          alert(`CSV loaded successfully!\n\nImported ${newTasks.length} intake forms to 
+your INBOX.`);
         } else {
           // JSON Backup processing
           const loadedData = JSON.parse(content);
@@ -533,7 +634,8 @@ function App() {
             if (loadedData.columnWidths) setColumnWidths(loadedData.columnWidths);
             if (loadedData.columnOrder) setColumnOrder(loadedData.columnOrder);
             if (loadedData.settings) setSettings(loadedData.settings);
-            if (loadedData.expandedGroups) setExpandedGroups(loadedData.expandedGroups);
+            if (loadedData.expandedGroups) 
+setExpandedGroups(loadedData.expandedGroups);
             if (loadedData.columns) setColumns(loadedData.columns);
             if (loadedData.customThemes) setCustomThemes(loadedData.customThemes);
             alert('Dashboard backup data loaded successfully!');
@@ -542,91 +644,137 @@ function App() {
       } catch (error) {
         alert('Error loading file: ' + error.message);
       }
-    };
-    reader.readAsText(file);
+    }; reader.readAsText(file);
     event.target.value = '';
   };
-
   const exportJSON = () => {
-    const dataToSave = { tasks, columnWidths, columnOrder, settings, expandedGroups, columns, customThemes, savedAt: new Date().toISOString(), version: '5.1' };
+    const dataToSave = { tasks, columnWidths, columnOrder, settings, expandedGroups, 
+columns, customThemes, savedAt: new Date().toISOString(), version: '5.1' };
     const jsonString = JSON.stringify(dataToSave, null, 2);
     const now = new Date();
-    const filename = `IMPACT-BACKUP-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}.json`;
+    const filename = `IMPACT-BACKUP-${now.getFullYear()}${String(now.getMonth()
++1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}.json`;
     const blob = new Blob([jsonString], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = filename;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); 
+URL.revokeObjectURL(url);
   };
-
   const exportCSV = () => {
     if(tasks.length === 0) return alert('No data to export!');
     const exportColumns = columnOrder.filter(k => k !== 'drag' && k !== 'actions');
     const headers = exportColumns.map(k => columns[k]?.label || k);
-    const csvRows = tasks.map(t => exportColumns.map(k => `"${(t[k] || '').replace(/"/g, '""')}"`).join(','));
+    const csvRows = tasks.map(t => exportColumns.map(k => `"${(t[k] || '').replace(/"/g, 
+'""')}"`).join(','));
     const csvContent = [headers.join(','), ...csvRows].join('\n');
     const now = new Date();
-    const filename = `IMPACT-Export-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}.csv`;
+    const filename = `IMPACT-Export-${now.getFullYear()}${String(now.getMonth()
++1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}.csv`;
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = filename;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); 
+URL.revokeObjectURL(url);
   };
-
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((currentUser) => { setUser(currentUser); setLoading(false); });
+    const unsubscribe = auth.onAuthStateChanged((currentUser) => 
+{ setUser(currentUser); setLoading(false); });
     return () => unsubscribe();
+  }, []);
+  
+  // Firebase Connection Status Listener
+  useEffect(() => {
+    if (!database) return;
+    const connectedRef = database.ref(".info/connected");
+    const handleChange = (snap) => {
+      setFirebaseStatus(snap.val() ? 'online' : 'offline');
+    };
+    connectedRef.on('value', handleChange);
+    return () => connectedRef.off('value', handleChange);
   }, []);
 
   useEffect(() => {
     if (user && database) {
       setFirebaseSynced(false); setInitialLoadComplete(false);
-      let loadedCount = 0; const totalLoads = 7; // Increased load count for customThemes
-      const checkAllLoaded = () => { loadedCount++; if (loadedCount === totalLoads) { setFirebaseSynced(true); setInitialLoadComplete(true); } };
-
+      let loadedCount = 0; const totalLoads = 7; // Increased load count for 
+customThemes
+      const checkAllLoaded = () => { loadedCount++; if (loadedCount === totalLoads) 
+{ setFirebaseSynced(true); setInitialLoadComplete(true); } }; const checkAllLoaded = () => { loadedCount++; if (loadedCount === totalLoads) 
+{ setFirebaseSynced(true); setInitialLoadComplete(true); } };
       const tasksRef = database.ref('userData/tasks');
-      const tasksListener = tasksRef.on('value', (s) => { const d = s.val(); if (d) setTasks(d); if (loadedCount < totalLoads) checkAllLoaded(); });
-
+      const tasksListener = tasksRef.on('value', (s) => { const d = s.val(); if (d) 
+setTasks(d); if (loadedCount < totalLoads) checkAllLoaded(); });
       const widthsRef = database.ref('userData/columnWidths');
-      const widthsListener = widthsRef.on('value', (s) => { const d = s.val(); if (d) setColumnWidths(d); if (loadedCount < totalLoads) checkAllLoaded(); });
-
+      const widthsListener = widthsRef.on('value', (s) => { const d = s.val(); if (d) 
+setColumnWidths(d); if (loadedCount < totalLoads) checkAllLoaded(); });
       const orderRef = database.ref('userData/columnOrder');
-      const orderListener = orderRef.on('value', (s) => { const d = s.val(); if (d) setColumnOrder(d); if (loadedCount < totalLoads) checkAllLoaded(); });
-
+      const orderListener = orderRef.on('value', (s) => { const d = s.val(); if (d) 
+setColumnOrder(d); if (loadedCount < totalLoads) checkAllLoaded(); });
       const groupsRef = database.ref('userData/expandedGroups');
-      const groupsListener = groupsRef.on('value', (s) => { const d = s.val(); if (d) setExpandedGroups(d); if (loadedCount < totalLoads) checkAllLoaded(); });
-
+      const groupsListener = groupsRef.on('value', (s) => { const d = s.val(); if (d) 
+setExpandedGroups(d); if (loadedCount < totalLoads) checkAllLoaded(); });
       const settingsRef = database.ref('userData/settings');
-      const settingsListener = settingsRef.on('value', (s) => { const d = s.val(); if (d) setSettings(d); if (loadedCount < totalLoads) checkAllLoaded(); });
-
+      const settingsListener = settingsRef.on('value', (s) => { const d = s.val(); if (d) 
+setSettings(d); if (loadedCount < totalLoads) checkAllLoaded(); });
       const columnsRef = database.ref('userData/columns');
-      const columnsListener = columnsRef.on('value', (s) => { const d = s.val(); if (d) { setColumns(d); localStorage.setItem('comcam_columns_v5', JSON.stringify(d)); } if (loadedCount < totalLoads) checkAllLoaded(); });
-
+      const columnsListener = columnsRef.on('value', (s) => { const d = s.val(); if (d) 
+{ setColumns(d); localStorage.setItem('comcam_columns_v5', JSON.stringify(d)); } if 
+(loadedCount < totalLoads) checkAllLoaded(); });
       const themesRef = database.ref('userData/customThemes');
-      const themesListener = themesRef.on('value', (s) => { const d = s.val(); if (d) { setCustomThemes(d); localStorage.setItem('comcam_customThemes', JSON.stringify(d)); } if (loadedCount < totalLoads) checkAllLoaded(); });
-
+      const themesListener = themesRef.on('value', (s) => { const d = s.val(); if (d) 
+{ setCustomThemes(d); localStorage.setItem('comcam_customThemes', 
+JSON.stringify(d)); } if (loadedCount < totalLoads) checkAllLoaded(); });
       return () => {
-        tasksRef.off('value', tasksListener); widthsRef.off('value', widthsListener); orderRef.off('value', orderListener);
-        groupsRef.off('value', groupsListener); settingsRef.off('value', settingsListener); columnsRef.off('value', columnsListener); themesRef.off('value', themesListener);
+        tasksRef.off('value', tasksListener); widthsRef.off('value', widthsListener); 
+orderRef.off('value', orderListener);
+        groupsRef.off('value', groupsListener); settingsRef.off('value', settingsListener); 
+columnsRef.off('value', columnsListener); themesRef.off('value', themesListener);
       };
     }
   }, [user]);
-
-  useEffect(() => { try { localStorage.setItem('comcam_tasks', JSON.stringify(tasks)); if (user && database && initialLoadComplete) database.ref('userData/tasks').set(tasks); } catch(e){} }, [tasks, user, initialLoadComplete]);
-  useEffect(() => { try { localStorage.setItem('comcam_columnWidths_v5', JSON.stringify(columnWidths)); if (user && database && initialLoadComplete) database.ref('userData/columnWidths').set(columnWidths); } catch(e){} }, [columnWidths, user, initialLoadComplete]);
-  useEffect(() => { try { localStorage.setItem('comcam_columnOrder_v5', JSON.stringify(columnOrder)); if (user && database && initialLoadComplete) database.ref('userData/columnOrder').set(columnOrder); } catch(e){} }, [columnOrder, user, initialLoadComplete]);
-  useEffect(() => { try { localStorage.setItem('comcam_expandedGroups', JSON.stringify(expandedGroups)); if (user && database && initialLoadComplete) database.ref('userData/expandedGroups').set(expandedGroups); } catch(e){} }, [expandedGroups, user, initialLoadComplete]);
-  useEffect(() => { try { localStorage.setItem('comcam_settings', JSON.stringify(settings)); if (user && database && initialLoadComplete) database.ref('userData/settings').set(settings); } catch(e){} }, [settings, user, initialLoadComplete]);
-  useEffect(() => { try { localStorage.setItem('comcam_columns_v5', JSON.stringify(columns)); if (user && database && initialLoadComplete) database.ref('userData/columns').set(columns); } catch(e){} }, [columns, user, initialLoadComplete]);
-  useEffect(() => { try { localStorage.setItem('comcam_customThemes', JSON.stringify(customThemes)); if (user && database && initialLoadComplete) database.ref('userData/customThemes').set(customThemes); } catch(e){} }, [customThemes, user, initialLoadComplete]);
-
-  const handleLogin = async (e) => { e.preventDefault(); try { await auth.signInWithEmailAndPassword(email, password); } catch(err) { setAuthError(err.message); } };
+  useEffect(() => { try { localStorage.setItem('comcam_tasks', JSON.stringify(tasks)); if 
+(user && database && initialLoadComplete) database.ref('userData/tasks').set(tasks); } 
+catch(e){} }, [tasks, user, initialLoadComplete]);
+  useEffect(() => { try { localStorage.setItem('comcam_columnWidths_v5', 
+JSON.stringify(columnWidths)); if (user && database && initialLoadComplete) 
+database.ref('userData/columnWidths').set(columnWidths); } catch(e){} }, 
+[columnWidths, user, initialLoadComplete]); useEffect(() => { try { localStorage.setItem('comcam_columnWidths_v5', 
+JSON.stringify(columnWidths)); if (user && database && initialLoadComplete) 
+database.ref('userData/columnWidths').set(columnWidths); } catch(e){} }, 
+[columnWidths, user, initialLoadComplete]);
+  useEffect(() => { try { localStorage.setItem('comcam_columnOrder_v5', 
+JSON.stringify(columnOrder)); if (user && database && initialLoadComplete) 
+database.ref('userData/columnOrder').set(columnOrder); } catch(e){} }, [columnOrder, 
+user, initialLoadComplete]);
+  useEffect(() => { try { localStorage.setItem('comcam_expandedGroups', 
+JSON.stringify(expandedGroups)); if (user && database && initialLoadComplete) 
+database.ref('userData/expandedGroups').set(expandedGroups); } catch(e){} }, 
+[expandedGroups, user, initialLoadComplete]);
+  useEffect(() => { try { localStorage.setItem('comcam_settings', 
+JSON.stringify(settings)); if (user && database && initialLoadComplete) 
+database.ref('userData/settings').set(settings); } catch(e){} }, [settings, user, 
+initialLoadComplete]);
+  useEffect(() => { try { localStorage.setItem('comcam_columns_v5', 
+JSON.stringify(columns)); if (user && database && initialLoadComplete) 
+database.ref('userData/columns').set(columns); } catch(e){} }, [columns, user, 
+initialLoadComplete]);
+  useEffect(() => { try { localStorage.setItem('comcam_customThemes', 
+JSON.stringify(customThemes)); if (user && database && initialLoadComplete) 
+database.ref('userData/customThemes').set(customThemes); } catch(e){} }, 
+[customThemes, user, initialLoadComplete]);
+  const handleLogin = async (e) => { e.preventDefault(); try { await 
+auth.signInWithEmailAndPassword(email, password); } catch(err) 
+{ setAuthError(err.message); } };
   const handleLogout = async () => { try { await auth.signOut(); } catch(err) {} };
-
-  const handleDragStart = (e, task) => { setDraggedTask(task); try { e.dataTransfer.setData('text/plain', String(task.id)); } catch {} e.dataTransfer.effectAllowed = 'move'; setTimeout(() => { if (e.currentTarget) e.currentTarget.style.opacity = '0.5'; }, 0); };
-  const handleDragEnd = (e) => { if (e.currentTarget) e.currentTarget.style.opacity = '1'; setDraggedTask(null); setDragOverTask(null); };
-  const handleDragOver = (e, task) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; if (draggedTask && task.id !== draggedTask.id) setDragOverTask(task); };
+  const handleDragStart = (e, task) => { setDraggedTask(task); try 
+{ e.dataTransfer.setData('text/plain', String(task.id)); } catch {} 
+e.dataTransfer.effectAllowed = 'move'; setTimeout(() => { if (e.currentTarget) 
+e.currentTarget.style.opacity = '0.5'; }, 0); };
+  const handleDragEnd = (e) => { if (e.currentTarget) e.currentTarget.style.opacity = '1'; 
+setDraggedTask(null); setDragOverTask(null); };
+  const handleDragOver = (e, task) => { e.preventDefault(); e.dataTransfer.dropEffect = 
+'move'; if (draggedTask && task.id !== draggedTask.id) setDragOverTask(task); };
   const handleDragLeave = () => setDragOverTask(null);
-  
   const handleDrop = (e, targetTask) => {
     e.preventDefault();
     if (!draggedTask) { setDragOverTask(null); return; }
@@ -636,12 +784,13 @@ function App() {
     const [removed] = newTasks.splice(draggedIndex, 1);
     removed.group = targetTask.group;
     newTasks.splice(targetIndex, 0, removed);
-    setTasks(newTasks);
-    setDragOverTask(null); setDraggedTask(null);
+    setTasks(newTasks); setDragOverTask(null); setDraggedTask(null);
   };
-  
-  const handleColumnDragStart = (e, columnKey) => { setDraggedColumn(columnKey); e.dataTransfer.effectAllowed = 'move'; };
-  const handleColumnDragOver = (e, columnKey) => { e.preventDefault(); if (draggedColumn && draggedColumn !== columnKey) setDragOverColumn(columnKey); };
+  const handleColumnDragStart = (e, columnKey) => { setDraggedColumn(columnKey); 
+e.dataTransfer.effectAllowed = 'move'; };
+  const handleColumnDragOver = (e, columnKey) => { e.preventDefault(); if 
+(draggedColumn && draggedColumn !== columnKey) 
+setDragOverColumn(columnKey); };
   const handleColumnDragLeave = () => setDragOverColumn(null);
   const handleColumnDrop = (e, targetColumn) => {
     e.preventDefault();
@@ -658,65 +807,102 @@ function App() {
     }
     setDraggedColumn(null);
   };
-
-  const handleResizeStart = (e, columnKey) => { e.preventDefault(); e.stopPropagation(); setResizingColumn(columnKey); resizeStartX.current = e.clientX; resizeStartWidth.current = columnWidths[columnKey]; };
-  const handleMouseMove = useCallback((e) => { if (resizingColumn) { const diff = e.clientX - resizeStartX.current; setColumnWidths(prev => ({ ...prev, [resizingColumn]: Math.max(80, resizeStartWidth.current + diff) })); } }, [resizingColumn]);
-  const handleMouseUp = useCallback(() => { if (resizingColumn) setResizingColumn(null); }, [resizingColumn]);
-
+  const handleResizeStart = (e, columnKey) => { e.preventDefault(); 
+e.stopPropagation(); setResizingColumn(columnKey); resizeStartX.current = e.clientX; 
+resizeStartWidth.current = columnWidths[columnKey]; };
+  const handleMouseMove = useCallback((e) => { if (resizingColumn) { const diff = 
+e.clientX - resizeStartX.current; setColumnWidths(prev => ({ ...prev, [resizingColumn]: 
+Math.max(80, resizeStartWidth.current + diff) })); } }, [resizingColumn]);
+  const handleMouseUp = useCallback(() => { if (resizingColumn) 
+setResizingColumn(null); }, [resizingColumn]);
   useEffect(() => {
-    if (resizingColumn) { document.addEventListener('mousemove', handleMouseMove); document.addEventListener('mouseup', handleMouseUp); document.body.style.cursor = 'col-resize'; document.body.style.userSelect = 'none'; }
-    return () => { document.removeEventListener('mousemove', handleMouseMove); document.removeEventListener('mouseup', handleMouseUp); document.body.style.cursor = ''; document.body.style.userSelect = ''; };
+    if (resizingColumn) { document.addEventListener('mousemove', handleMouseMove); 
+document.addEventListener('mouseup', handleMouseUp); document.body.style.cursor 
+= 'col-resize'; document.body.style.userSelect = 'none'; }
+    return () => { document.removeEventListener('mousemove', handleMouseMove); 
+document.removeEventListener('mouseup', handleMouseUp); 
+document.body.style.cursor = ''; document.body.style.userSelect = ''; };
   }, [resizingColumn, handleMouseMove, handleMouseUp]);
-
   const EditableCell = ({ value, taskId, field }) => {
     const [isEditing, setIsEditing] = useState(false);
-    const [tempValue, setTempValue] = useState(value);
-    
-    useEffect(() => { setTempValue(value); }, [value]);
-
+    const [tempValue, setTempValue] = useState(value); useEffect(() => { setTempValue(value); }, [value]);
     const handleSave = () => { updateTask(taskId, field, tempValue); setIsEditing(false); };
-    
-    if (isEditing) return <input type="text" value={tempValue} onChange={e => setTempValue(e.target.value)} onBlur={handleSave} onKeyDown={e => e.key === 'Enter' && handleSave()} className="w-full px-2 py-1 border border-blue-500 rounded focus:outline-none text-black" style={{ backgroundColor: settings.darkMode ? '#3a3a3a' : '#ffffff', color: settings.darkMode ? '#ffffff' : '#1f2937' }} autoFocus />;
-    return <div onClick={() => setIsEditing(true)} className="cursor-pointer px-2 py-1 rounded min-h-[24px]" onMouseEnter={e => e.currentTarget.style.backgroundColor = settings.darkMode ? '#3a3a3a' : '#f9fafb'} onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}>{value || <span className="italic opacity-60">Click to edit</span>}</div>;
+    if (isEditing) return <input type="text" value={tempValue} onChange={e => 
+setTempValue(e.target.value)} onBlur={handleSave} onKeyDown={e => e.key === 
+'Enter' && handleSave()} className="w-full px-2 py-1 border border-blue-500 rounded 
+focus:outline-none text-black" style={{ backgroundColor: settings.darkMode ? 
+'#3a3a3a' : '#ffffff', color: settings.darkMode ? '#ffffff' : '#1f2937' }} autoFocus />;
+    return <div onClick={() => setIsEditing(true)} className="cursor-pointer px-2 py-1 
+rounded min-h-[24px]" onMouseEnter={e => e.currentTarget.style.backgroundColor = 
+settings.darkMode ? '#3a3a3a' : '#f9fafb'} onMouseLeave={e => 
+e.currentTarget.style.backgroundColor = 'transparent'}>{value || <span 
+className="italic opacity-60">Click to edit</span>}</div>;
   };
-
   const BranchCell = ({ status, taskId, isExpanded, onToggle }) => {
-    const options = ['Army', 'Navy', 'Air Force', 'Marines', 'Coast Guard', 'Space Force', 'Not started'];
+    const options = ['Army', 'Navy', 'Air Force', 'Marines', 'Coast Guard', 'Space Force', 
+'Not started'];
     return (
       <div className="w-full relative">
-        <button onClick={onToggle} style={{ backgroundColor: branchColors[status] || '#9ca3af', color: getTextColor(branchColors[status] || '#9ca3af'), boxShadow: isExpanded ? '0 0 0 3px rgba(59, 130, 246, 0.2)' : 'none', transition: 'all .2s ease' }} className="px-3 py-2 rounded text-sm font-medium hover:opacity-90 w-full text-left flex items-center justify-between">
+        <button onClick={onToggle} style={{ backgroundColor: branchColors[status] || 
+'#9ca3af', color: getTextColor(branchColors[status] || '#9ca3af'), boxShadow: 
+isExpanded ? '0 0 0 3px rgba(59, 130, 246, 0.2)' : 'none', transition: 'all .2s ease' }} 
+className="px-3 py-2 rounded text-sm font-medium hover:opacity-90 w-full text-left 
+flex items-center justify-between">
             <span>{status || 'Not started'}</span>
-            <div className="chevron-rotate" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}><ChevronDown /></div>
+            <div className="chevron-rotate" style={{ transform: isExpanded ? 
+'rotate(180deg)' : 'rotate(0deg)' }}><ChevronDown /></div>
         </button>
         {isExpanded && (
-          <div className="mt-1 rounded-lg shadow-xl border-2 p-2 space-y-2 z-50 absolute left-0 top-full" style={{ borderColor: '#3b82f6', backgroundColor: settings.darkMode ? '#2a2a2a' : '#ffffff', animation: 'slideDown 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards', width: '200px' }}>
+          <div className="mt-1 rounded-lg shadow-xl border-2 p-2 space-y-2 z-50 
+absolute left-0 top-full" style={{ borderColor: '#3b82f6', backgroundColor: 
+settings.darkMode ? '#2a2a2a' : '#ffffff', animation: 'slideDown 0.3s cubic-bezier(0.34, 
+1.56, 0.64, 1) forwards', width: '200px' }}>
             {options.map(o => (
-                <button key={o} onClick={() => { updateTask(taskId, 'branchOfService', o); onToggle(); }} style={{ backgroundColor: branchColors[o], color: getTextColor(branchColors[o]) }} className="px-4 py-3 w-full text-left text-sm font-semibold rounded-lg hover:scale-105 hover:shadow-lg transition-all duration-2000">
+                <button key={o} onClick={() => { updateTask(taskId, 'branchOfService', o); 
+onToggle(); }} style={{ backgroundColor: branchColors[o], color: 
+getTextColor(branchColors[o]) }} className="px-4 py-3 w-full text-left text-sm font-
+semibold rounded-lg hover:scale-105 hover:shadow-lg transition-all duration-2000">
                     {o}
                 </button>
             ))}
           </div>
         )}
       </div>
-    );
-  };
-
+    ); };
   const renderCell = (columnKey, task) => {
     switch (columnKey) {
-      case 'branchOfService': return <BranchCell status={task.branchOfService || 'Not started'} taskId={task.id} isExpanded={expandedDropdown === `${task.id}-branchOfService`} onToggle={() => setExpandedDropdown(expandedDropdown === `${task.id}-branchOfService` ? null : `${task.id}-branchOfService`)} />;
-      case 'timestamp': return <InlineCalendar value={task.timestamp} onChange={v => updateTask(task.id, 'timestamp', v)} darkMode={settings.darkMode} isExpanded={expandedDropdown === `${task.id}-timestamp`} onToggle={() => setExpandedDropdown(expandedDropdown === `${task.id}-timestamp` ? null : `${task.id}-timestamp`)} />;
-      case 'etsDate': return <InlineCalendar value={task.etsDate} onChange={v => updateTask(task.id, 'etsDate', v)} darkMode={settings.darkMode} isExpanded={expandedDropdown === `${task.id}-etsDate`} onToggle={() => setExpandedDropdown(expandedDropdown === `${task.id}-etsDate` ? null : `${task.id}-etsDate`)} />;
-      case 'terminalLeave': return <InlineCalendar value={task.terminalLeave} onChange={v => updateTask(task.id, 'terminalLeave', v)} darkMode={settings.darkMode} isExpanded={expandedDropdown === `${task.id}-terminalLeave`} onToggle={() => setExpandedDropdown(expandedDropdown === `${task.id}-terminalLeave` ? null : `${task.id}-terminalLeave`)} />;
-      case 'drag': return <div className="flex items-center justify-center"><GripVertical size={16} className="text-gray-400 cursor-move" /></div>;
-      case 'actions': return <button onClick={() => confirmDelete(task)} className="text-gray-400 hover:text-red-500 p-2 rounded"><Trash2 size={18} /></button>;
-      default: 
-        return <EditableCell value={task[columnKey] || ''} taskId={task.id} field={columnKey} />;
+      case 'branchOfService': return <BranchCell status={task.branchOfService || 'Not 
+started'} taskId={task.id} isExpanded={expandedDropdown === `${task.id}-
+branchOfService`} onToggle={() => setExpandedDropdown(expandedDropdown === `$
+{task.id}-branchOfService` ? null : `${task.id}-branchOfService`)} />;
+      case 'timestamp': return <InlineCalendar value={task.timestamp} onChange={v => 
+updateTask(task.id, 'timestamp', v)} darkMode={settings.darkMode} 
+isExpanded={expandedDropdown === `${task.id}-timestamp`} onToggle={() => 
+setExpandedDropdown(expandedDropdown === `${task.id}-timestamp` ? null : `$
+{task.id}-timestamp`)} />;
+      case 'etsDate': return <InlineCalendar value={task.etsDate} onChange={v => 
+updateTask(task.id, 'etsDate', v)} darkMode={settings.darkMode} 
+isExpanded={expandedDropdown === `${task.id}-etsDate`} onToggle={() => 
+setExpandedDropdown(expandedDropdown === `${task.id}-etsDate` ? null : `${task.id}-
+etsDate`)} />;
+      case 'terminalLeave': return <InlineCalendar value={task.terminalLeave} 
+onChange={v => updateTask(task.id, 'terminalLeave', v)} 
+darkMode={settings.darkMode} isExpanded={expandedDropdown === `${task.id}-
+terminalLeave`} onToggle={() => setExpandedDropdown(expandedDropdown === `$
+{task.id}-terminalLeave` ? null : `${task.id}-terminalLeave`)} />;
+      case 'drag': return <div className="flex items-center justify-center"><GripVertical 
+size={16} className="text-gray-400 cursor-move" /></div>;
+      case 'actions': return <button onClick={() => confirmDelete(task)} className="text-
+gray-400 hover:text-red-500 p-2 rounded"><Trash2 size={18} /></button>;
+      default:
+        return <EditableCell value={task[columnKey] || ''} taskId={task.id} 
+field={columnKey} />;
     }
   };
-
   const GroupHeader = ({ title, groupId, count, bgColor }) => (
-    <div 
-        className="px-4 py-3 flex items-center justify-between rounded-lg mb-2 shadow-sm transition-all" 
+    <div
+        className="px-4 py-3 flex items-center justify-between rounded-lg mb-2 shadow-
+sm transition-all" 
         style={{ backgroundColor: bgColor, color: getTextColor(bgColor) }}
         onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
         onDrop={(e) => {
@@ -724,83 +910,117 @@ function App() {
             if(draggedTask) {
                 const newTasks = [...tasks];
                 const draggedIndex = newTasks.findIndex(t => t.id === draggedTask.id);
-                newTasks[draggedIndex].group = groupId; 
+                newTasks[draggedIndex].group = groupId;
                 setTasks(newTasks);
-                setDraggedTask(null);
-            }
+                setDraggedTask(null); }
         }}
     >
       <div className="flex items-center gap-3">
-        <button onClick={() => toggleGroup(groupId)} className="hover:bg-white/20 rounded p-1 transition-colors">{expandedGroups[groupId] ? <ChevronDown /> : <ChevronRight />}</button>
-        <span className="font-semibold text-lg">{title}</span><span className="bg-white/20 px-2 py-0.5 rounded-full text-sm">{count} items</span>
+        <button onClick={() => toggleGroup(groupId)} className="hover:bg-white/20 
+rounded p-1 transition-colors">{expandedGroups[groupId] ? <ChevronDown /> : 
+<ChevronRight />}</button>
+        <span className="font-semibold text-lg">{title}</span><span className="bg-
+white/20 px-2 py-0.5 rounded-full text-sm">{count} items</span>
       </div>
     </div>
   );
-  
-  const groups = { group1: { title: 'INBOX', bgColor: theme.accent }, group2: { title: 'COMPLETED', bgColor: theme.highlight } };
-
-  if (loading) return <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#1f2937' }}><div className="text-white text-lg animate-pulse">Loading...</div></div>;
-  
+  const groups = { group1: { title: 'INBOX', bgColor: theme.accent }, group2: { title: 
+'COMPLETED', bgColor: theme.highlight } };
+  if (loading) return <div className="min-h-screen flex items-center justify-center" 
+style={{ backgroundColor: '#1f2937' }}><div className="text-white text-lg animate-
+pulse">Loading...</div></div>;
   if (!user) return (
     <div className="min-h-screen flex items-center justify-center p-6 bg-gray-900">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8">
-        <div className="text-center mb-8"><Lock size={40} className="mx-auto text-blue-500 mb-4" /><h1 className="text-3xl font-bold text-gray-900" style={{ fontFamily: '"Gotham", "Montserrat", sans-serif' }}>IMPACT DataTrak</h1></div>
+        <div className="text-center mb-8"><Lock size={40} className="mx-auto text-
+blue-500 mb-4" /><h1 className="text-3xl font-bold text-gray-900" style={{ fontFamily: 
+'"Gotham", "Montserrat", sans-serif' }}>IMPACT DataTrak</h1></div>
         <form onSubmit={handleLogin} className="space-y-4">
-          <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="your@email.com" required />
-          <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="........" required />
-          {authError && <div className="bg-red-50 text-red-700 px-4 py-3 rounded-lg text-sm">{authError}</div>}
-          <button type="submit" className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg">Sign In</button>
+          <input type="email" value={email} onChange={e => setEmail(e.target.value)} 
+className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500" 
+placeholder="your@email.com" required />
+          <input type="password" value={password} onChange={e => 
+setPassword(e.target.value)} className="w-full px-4 py-3 border rounded-lg 
+focus:ring-2 focus:ring-blue-500" placeholder="........" required />
+          {authError && <div className="bg-red-50 text-red-700 px-4 py-3 rounded-lg text-
+sm">{authError}</div>}
+          <button type="submit" className="w-full py-3 bg-blue-600 hover:bg-blue-700 
+text-white font-semibold rounded-lg">Sign In</button>
         </form>
       </div>
     </div>
   );
-
   return (
-    <div className={`min-h-screen p-4 ${resizingColumn ? 'cursor-col-resize' : ''}`} style={{ backgroundColor: theme.background }}>
-      <div className="rounded-xl shadow-lg p-4 mb-4" style={{ backgroundColor: theme.cardBg || theme.background }}>
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          
+    <div className={`min-h-screen p-4 ${resizingColumn ? 'cursor-col-resize' : ''}`} 
+style={{ backgroundColor: theme.background }}>
+      <div className="rounded-xl shadow-lg p-4 mb-4" style={{ backgroundColor: 
+theme.cardBg || theme.background }}> <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-end gap-3">
-            <h1 className="text-4xl font-extrabold tracking-tight" style={{ color: theme.textPrimary, fontFamily: '"Gotham", "Montserrat", sans-serif' }}>IMPACT DataTrak</h1>
+            <h1 className="text-4xl font-extrabold tracking-tight" style={{ color: 
+theme.textPrimary, fontFamily: '"Gotham", "Montserrat", sans-serif' }}>IMPACT 
+DataTrak</h1>
             <div className="flex flex-col pb-1">
     <span className="text-sm font-medium text-gray-500">v5.1</span>
-    <div className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: theme.textSecondary }}>
-        <div className="w-2 h-2 rounded-full bg-green-500"></div>
-        Connected
+    <div className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: 
+theme.textSecondary }}>
+        <div 
+            className={`w-2 h-2 rounded-full animate-pulse ${
+                firebaseStatus === 'online' ? 'bg-green-500' : 
+                firebaseStatus === 'offline' ? 'bg-red-500' : 
+                'bg-yellow-500'
+            }`}
+        ></div>
+        <span>{
+            firebaseStatus === 'online' ? 'Connected to Firebase' : 
+            firebaseStatus === 'offline' ? 'Disconnected' : 
+            'Connecting...'
+        }</span>
     </div>
 </div>
           </div>
-
           <div className="flex flex-wrap gap-2">
-            <label htmlFor="mainFileInput" className="cursor-pointer px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-medium flex items-center gap-1 shadow-sm transition-all hover:shadow">
+            <label htmlFor="mainFileInput" className="cursor-pointer px-3 py-1.5 bg-
+green-600 hover:bg-green-700 text-white rounded-lg text-xs font-medium flex items-
+center gap-1 shadow-sm transition-all hover:shadow">
                 <Upload size={14} /> Import Data
             </label>
-            <input id="mainFileInput" type="file" accept=".csv,.json" onChange={handleFileLoad} className="hidden" />
-            
-            <button onClick={() => setShowAnalytics(true)} className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-medium flex items-center gap-1 shadow-sm transition-all hover:shadow"><PieChartIcon size={14} />Analytics</button>
-            <button onClick={() => setShowSettings(true)} className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-medium shadow-sm transition-all flex items-center gap-1"><Settings size={14} />Settings</button>
-            <button onClick={handleLogout} className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-medium shadow-sm transition-all flex items-center gap-1"><User size={14} />Logout</button>
+            <input id="mainFileInput" type="file" accept=".csv,.json" 
+onChange={handleFileLoad} className="hidden" />
+            <button onClick={() => setShowAnalytics(true)} className="px-3 py-1.5 bg-
+purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-medium flex items-
+center gap-1 shadow-sm transition-all hover:shadow"><PieChartIcon size={14} /
+>Analytics</button>
+            <button onClick={() => setShowSettings(true)} className="px-3 py-1.5 bg-
+gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-medium shadow-sm 
+transition-all flex items-center gap-1"><Settings size={14} />Settings</button>
+            <button onClick={handleLogout} className="px-3 py-1.5 bg-red-600 hover:bg-
+red-700 text-white rounded-lg text-xs font-medium shadow-sm transition-all flex items-
+center gap-1"><User size={14} />Logout</button>
           </div>
         </div>
       </div>
-      
-      <div className="rounded-xl shadow-lg overflow-hidden" style={{ backgroundColor: theme.background }}>
+      <div className="rounded-xl shadow-lg overflow-hidden" style={{ backgroundColor: 
+theme.background }}>
         {Object.entries(groups).map(([groupId, groupData]) => {
           const groupTasks = tasks.filter(t => t.group === groupId);
           return (
             <div key={groupId} className="border-b border-gray-200">
-              <GroupHeader title={groupData.title} groupId={groupId} count={groupTasks.length} bgColor={groupData.bgColor} />
-              {expandedGroups[groupId] && (
+              <GroupHeader title={groupData.title} groupId={groupId} 
+count={groupTasks.length} bgColor={groupData.bgColor} /> {expandedGroups[groupId] && (
                 <div className="overflow-x-auto pb-6 min-h-[300px]">
                   <table className="min-w-full" style={{ width: '100%', tableLayout: 'auto' }}>
                     <thead>
-                      <tr style={{ backgroundColor: settings.darkMode ? '#3a3a3a' : '#f9fafb', borderBottom: `1px solid ${settings.darkMode ? '#4a4a4a' : '#e5e7eb'}` }}>
+                      <tr style={{ backgroundColor: settings.darkMode ? '#3a3a3a' : '#f9fafb', 
+borderBottom: `1px solid ${settings.darkMode ? '#4a4a4a' : '#e5e7eb'}` }}>
                         {columnOrder.map((columnKey) => (
-                          <th 
-                              key={columnKey} 
-                              style={{ minWidth: `${columnWidths[columnKey]}px` }} 
-                              className={`px-4 py-3 text-left text-sm font-semibold relative group/th select-none transition-all ${dragOverColumn === columnKey ? 'shadow-[inset_4px_0_0_0_#3b82f6] bg-blue-50/50' : ''}`}
-                              draggable={columnKey !== 'actions' && columnKey !== 'drag' && editingHeader !== columnKey}
+                          <th
+                              key={columnKey}
+                              style={{ minWidth: `${columnWidths[columnKey]}px` }}
+                              className={`px-4 py-3 text-left text-sm font-semibold relative group/
+th select-none transition-all ${dragOverColumn === columnKey ? 'shadow-
+[inset_4px_0_0_0_#3b82f6] bg-blue-50/50' : ''}`}
+                              draggable={columnKey !== 'actions' && columnKey !== 'drag' && 
+editingHeader !== columnKey}
                               onDragStart={(e) => handleColumnDragStart(e, columnKey)}
                               onDragOver={(e) => handleColumnDragOver(e, columnKey)}
                               onDragLeave={handleColumnDragLeave}
@@ -808,43 +1028,57 @@ function App() {
                           >
                             <div className="flex items-center justify-between w-full">
                                 <div className="flex items-center gap-2 overflow-hidden w-full">
-                                    {columns[columnKey]?.icon !== 'none' && renderIcon(columns[columnKey]?.icon)}
-                                    
-                                    {editingHeader === columnKey && columnKey !== 'actions' && columnKey !== 'drag' ? (
-                                        <EditableHeader 
+                                    {columns[columnKey]?.icon !== 'none' && 
+renderIcon(columns[columnKey]?.icon)}
+                                    {editingHeader === columnKey && columnKey !== 'actions' && 
+columnKey !== 'drag' ? (
+                                        <EditableHeader
                                             initialLabel={columns[columnKey]?.label}
                                             onSave={(newLabel) => {
-                                                setColumns(prev => ({ ...prev, [columnKey]: { ...prev[columnKey], label: newLabel }}));
+                                                setColumns(prev => ({ ...prev, [columnKey]: 
+{ ...prev[columnKey], label: newLabel }}));
                                                 setEditingHeader(null);
                                             }}
                                             onCancel={() => setEditingHeader(null)}
                                         />
                                     ) : (
-                                        <span onDoubleClick={() => { if (columnKey !== 'actions' && columnKey !== 'drag') setEditingHeader(columnKey); }} className="cursor-text truncate w-full block" title="Double-click or hover to edit">
+                                        <span onDoubleClick={() => { if (columnKey !== 'actions' && 
+columnKey !== 'drag') setEditingHeader(columnKey); }} className="cursor-text 
+truncate w-full block" title="Double-click or hover to edit">
                                             {columns[columnKey]?.label}
                                         </span>
                                     )}
                                 </div>
-                                
                                 {columnKey !== 'actions' && columnKey !== 'drag' && (
-                                    <div className="flex items-center opacity-0 group-hover/th:opacity-100 transition-opacity gap-1 ml-2">
-                                        <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditingHeader(columnKey); }} className="text-gray-400 hover:text-blue-500 transition-colors p-1" title="Rename Column">
+                                    <div className="flex items-center opacity-0 group-hover/
+th:opacity-100 transition-opacity gap-1 ml-2"> <div className="flex items-center opacity-0 group-hover/
+th:opacity-100 transition-opacity gap-1 ml-2">
+                                        <button type="button" onClick={(e) => { e.preventDefault(); 
+e.stopPropagation(); setEditingHeader(columnKey); }} className="text-gray-400 
+hover:text-blue-500 transition-colors p-1" title="Rename Column">
                                             <Edit2 size={14} />
                                         </button>
                                         <button type="button" onClick={(e) => {
                                             e.preventDefault(); e.stopPropagation();
-                                            if(confirm(`Are you sure you want to delete the "${columns[columnKey]?.label}" column?`)) {
-                                                setColumnOrder(prev => prev.filter(k => k !== columnKey));
+                                            if(confirm(`Are you sure you want to delete the "$
+{columns[columnKey]?.label}" column?`)) {
+                                                setColumnOrder(prev => prev.filter(k => k !== 
+columnKey));
                                             }
-                                        }} className="text-gray-400 hover:text-red-500 transition-colors p-1" title="Delete Column">
+                                        }} className="text-gray-400 hover:text-red-500 transition-
+colors p-1" title="Delete Column">
                                             <Trash2 size={14} />
                                         </button>
                                     </div>
                                 )}
                             </div>
-
                             {columnKey !== 'actions' && columnKey !== 'drag' && (
-                              <div onMouseDown={(e) => handleResizeStart(e, columnKey)} className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize z-10" style={{ backgroundColor: resizingColumn === columnKey ? '#3b82f6' : 'transparent' }} onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.5)'} onMouseLeave={e => { if (resizingColumn !== columnKey) e.currentTarget.style.backgroundColor = 'transparent'; }} />
+                              <div onMouseDown={(e) => handleResizeStart(e, columnKey)} 
+className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize z-10" 
+style={{ backgroundColor: resizingColumn === columnKey ? '#3b82f6' : 'transparent' }} 
+onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.5)'} 
+onMouseLeave={e => { if (resizingColumn !== columnKey) 
+e.currentTarget.style.backgroundColor = 'transparent'; }} />
                             )}
                           </th>
                         ))}
@@ -852,12 +1086,18 @@ function App() {
                     </thead>
                     <tbody>
                       {groupTasks.map((task, index) => {
-                        const currentRowBg = index % 2 === 0 ? (settings.darkMode ? '#3a3a3a' : theme.cardBg || theme.background) : (settings.darkMode ? '#2e2e2e' : theme.accent + '30');
+                        const currentRowBg = index % 2 === 0 ? (settings.darkMode ? 
+'#3a3a3a' : theme.cardBg || theme.background) : (settings.darkMode ? '#2e2e2e' : 
+theme.accent + '30');
                         return (
-                          <tr key={task.id} draggable="true" onDragStart={(e) => handleDragStart(e, task)} onDragEnd={handleDragEnd} onDragOver={(e) => handleDragOver(e, task)} onDragLeave={handleDragLeave} onDrop={(e) => handleDrop(e, task)} style={{ backgroundColor: currentRowBg, color: getTextColor(currentRowBg), transition: 'all 0.4s' }} className="border-b cursor-move">
+                          <tr key={task.id} draggable="true" onDragStart={(e) => 
+handleDragStart(e, task)} onDragEnd={handleDragEnd} onDragOver={(e) => 
+handleDragOver(e, task)} onDragLeave={handleDragLeave} onDrop={(e) => 
+handleDrop(e, task)} style={{ backgroundColor: currentRowBg, color: 
+getTextColor(currentRowBg), transition: 'all 0.4s' }} className="border-b cursor-move">
                             {columnOrder.map((columnKey) => (
-                              <td key={columnKey} style={{ minWidth: `${columnWidths[columnKey]}px` }} className="px-4 py-3 align-top">
-                                {renderCell(columnKey, task)}
+                              <td key={columnKey} style={{ minWidth: `$
+{columnWidths[columnKey]}px` }} className="px-4 py-3 align-top"> {renderCell(columnKey, task)}
                               </td>
                             ))}
                           </tr>
@@ -867,10 +1107,16 @@ function App() {
                   </table>
                   {groupId === 'group1' && (
                     <div className="p-4 flex gap-4 items-center">
-                        <button onClick={() => addTask(groupId)} style={{ backgroundColor: theme.primary, color: getTextColor(theme.primary) }} className="py-2 px-4 rounded-lg text-sm font-semibold shadow transition-opacity hover:opacity-80 flex items-center gap-1">
+                        <button onClick={() => addTask(groupId)} style={{ backgroundColor: 
+theme.primary, color: getTextColor(theme.primary) }} className="py-2 px-4 rounded-lg 
+text-sm font-semibold shadow transition-opacity hover:opacity-80 flex items-center 
+gap-1">
                             <Plus size={16} /> Add new item
                         </button>
-                        <button onClick={handleAddColumn} style={{ backgroundColor: theme.secondary, color: getTextColor(theme.secondary) }} className="py-2 px-4 rounded-lg text-sm font-semibold shadow transition-opacity hover:opacity-80 flex items-center gap-1">
+                        <button onClick={handleAddColumn} style={{ backgroundColor: 
+theme.secondary, color: getTextColor(theme.secondary) }} className="py-2 px-4 
+rounded-lg text-sm font-semibold shadow transition-opacity hover:opacity-80 flex items-
+center gap-1">
                             <Plus size={16} /> Add Custom Column
                         </button>
                     </div>
@@ -881,67 +1127,88 @@ function App() {
           );
         })}
       </div>
-
       {/* DELETE CONFIRMATION MODAL */}
       {deleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-
+center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full">
             <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+              <div className="flex-shrink-0 w-12 h-12 rounded-full bg-red-100 flex items-
+center justify-center">
                 <Trash2 size={24} className="text-red-600" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete Row?</h3>
-                <p className="text-gray-600 text-sm mb-4">Are you sure you want to delete this entry? This action cannot be undone.</p>
-                <div className="flex gap-3 justify-end">
-                  <button onClick={() => setDeleteConfirm(null)} className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors">Cancel</button>
-                  <button onClick={() => deleteTask(deleteConfirm.id)} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors">Delete</button>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete Row?</
+h3>
+                <p className="text-gray-600 text-sm mb-4">Are you sure you want to delete 
+this entry? This action cannot be undone.</p>
+                <div className="flex gap-3 justify-end"> <button onClick={() => setDeleteConfirm(null)} className="px-4 py-2 text-
+gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-
+colors">Cancel</button>
+                  <button onClick={() => deleteTask(deleteConfirm.id)} className="px-4 py-2 
+bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-
+colors">Delete</button>
                 </div>
               </div>
             </div>
           </div>
         </div>
       )}
-
       {/* ANALYTICS MODAL */}
       {showAnalytics && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl p-8 max-w-5xl w-full max-h-[90vh] overflow-y-auto" style={{ backgroundColor: theme.cardBg || theme.background }}>
-            <div className="flex items-center justify-between mb-8 pb-4 border-b" style={{ borderColor: settings.darkMode ? '#4a4a4a' : '#e5e7eb' }}>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-
+center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl p-8 max-w-5xl w-full max-h-
+[90vh] overflow-y-auto" style={{ backgroundColor: theme.cardBg || theme.background }}
+>
+            <div className="flex items-center justify-between mb-8 pb-4 border-b" 
+style={{ borderColor: settings.darkMode ? '#4a4a4a' : '#e5e7eb' }}>
                 <div>
-                    <h3 className="text-2xl font-bold" style={{ color: theme.textPrimary, fontFamily: '"Gotham", "Montserrat", sans-serif' }}>Data Analytics</h3>
-                    <p className="text-sm mt-1" style={{ color: theme.textSecondary }}>Visual breakdown of your uploaded CRM data</p>
+                    <h3 className="text-2xl font-bold" style={{ color: theme.textPrimary, 
+fontFamily: '"Gotham", "Montserrat", sans-serif' }}>Data Analytics</h3>
+                    <p className="text-sm mt-1" style={{ color: theme.textSecondary }}
+>Visual breakdown of your uploaded CRM data</p>
                 </div>
-                <button onClick={() => setShowAnalytics(false)} className="text-gray-400 hover:text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-full p-2 transition-colors" style={{ backgroundColor: settings.darkMode ? '#3a3a3a' : '#f3f4f6' }}><X size={24} /></button>
+                <button onClick={() => setShowAnalytics(false)} className="text-gray-400 
+hover:text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-full p-2 transition-colors" 
+style={{ backgroundColor: settings.darkMode ? '#3a3a3a' : '#f3f4f6' }}><X size={24} /></
+button>
             </div>
-            
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                
                 {/* Pie Chart: Branch of Service */}
-                <div className="rounded-xl border shadow-sm p-6" style={{ borderColor: settings.darkMode ? '#4a4a4a' : '#e5e7eb', backgroundColor: theme.background }}>
-                    <h4 className="text-lg font-bold mb-6 flex items-center gap-2" style={{ color: theme.textPrimary }}><PieChartIcon size={20} className="text-blue-500" /> Branch of Service Distribution</h4>
+                <div className="rounded-xl border shadow-sm p-6" style={{ borderColor: 
+settings.darkMode ? '#4a4a4a' : '#e5e7eb', backgroundColor: theme.background }}>
+                    <h4 className="text-lg font-bold mb-6 flex items-center gap-2" 
+style={{ color: theme.textPrimary }}><PieChartIcon size={20} className="text-
+blue-500" /> Branch of Service Distribution</h4>
                     {(() => {
-                        const counts = tasks.reduce((acc, t) => { const b = t.branchOfService || 'Unspecified'; acc[b] = (acc[b] || 0) + 1; return acc; }, {});
-                        return <SimplePieChart data={counts} colors={branchColors} theme={theme} />
-                    })()}
+                        const counts = tasks.reduce((acc, t) => { const b = t.branchOfService || 
+'Unspecified'; acc[b] = (acc[b] || 0) + 1; return acc; }, {});
+                        return <SimplePieChart data={counts} colors={branchColors} 
+theme={theme} /> })()}
                 </div>
-
                 {/* Bar Chart: Current Status Pipeline */}
-                <div className="rounded-xl border shadow-sm p-6" style={{ borderColor: settings.darkMode ? '#4a4a4a' : '#e5e7eb', backgroundColor: theme.background }}>
-                    <h4 className="text-lg font-bold mb-6 flex items-center gap-2" style={{ color: theme.textPrimary }}><BarChartIcon size={20} className="text-purple-500" /> Current Pipeline Status</h4>
+                <div className="rounded-xl border shadow-sm p-6" style={{ borderColor: 
+settings.darkMode ? '#4a4a4a' : '#e5e7eb', backgroundColor: theme.background }}>
+                    <h4 className="text-lg font-bold mb-6 flex items-center gap-2" 
+style={{ color: theme.textPrimary }}><BarChartIcon size={20} className="text-
+purple-500" /> Current Pipeline Status</h4>
                     {(() => {
-                        const counts = tasks.reduce((acc, t) => { 
-                            let s = t.currentStatus || 'Unspecified'; 
+                        const counts = tasks.reduce((acc, t) => {
+                            let s = t.currentStatus || 'Unspecified';
                             if(s.length > 20) s = s.substring(0, 20) + '...'; // truncate long strings
-                            acc[s] = (acc[s] || 0) + 1; return acc; 
+                            acc[s] = (acc[s] || 0) + 1; return acc;
                         }, {});
                         return <SimpleBarChart data={counts} theme={theme} />
                     })()}
                 </div>
-
                 {/* Optional Second Bar Chart: Opportunities */}
-                <div className="rounded-xl border shadow-sm p-6 lg:col-span-2" style={{ borderColor: settings.darkMode ? '#4a4a4a' : '#e5e7eb', backgroundColor: theme.background }}>
-                    <h4 className="text-lg font-bold mb-6 flex items-center gap-2" style={{ color: theme.textPrimary }}><BarChartIcon size={20} className="text-green-500" /> Desired Opportunities</h4>
+                <div className="rounded-xl border shadow-sm p-6 lg:col-span-2" 
+style={{ borderColor: settings.darkMode ? '#4a4a4a' : '#e5e7eb', backgroundColor: 
+theme.background }}>
+                    <h4 className="text-lg font-bold mb-6 flex items-center gap-2" 
+style={{ color: theme.textPrimary }}><BarChartIcon size={20} className="text-
+green-500" /> Desired Opportunities</h4>
                     {(() => {
                         const counts = {};
                         tasks.forEach(t => {
@@ -957,84 +1224,111 @@ function App() {
                         return <SimpleBarChart data={counts} theme={theme} />
                     })()}
                 </div>
-
             </div>
           </div>
         </div>
-      )}
-
-      {/* SETTINGS MODAL */}
+      )} {/* SETTINGS MODAL */}
       {showSettings && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6"><h3 className="text-xl font-semibold text-gray-900">Settings</h3><button onClick={() => setShowSettings(false)} className="text-gray-400 hover:text-gray-600"><X size={24} /></button></div>
-            
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-
+center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl p-6 max-w-4xl w-full max-h-
+[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6"><h3 className="text-
+xl font-semibold text-gray-900">Settings</h3><button onClick={() => 
+setShowSettings(false)} className="text-gray-400 hover:text-gray-600"><X size={24} /
+></button></div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              
               {/* Left Column - Toggles & Themes */}
               <div className="space-y-4">
-                
                 {/* Large iOS Style Dark Mode Toggle */}
-                <div className="flex items-center justify-between p-5 bg-gray-50 rounded-xl border border-gray-200 shadow-sm">
+                <div className="flex items-center justify-between p-5 bg-gray-50 rounded-xl 
+border border-gray-200 shadow-sm">
                   <div>
                     <h4 className="font-bold text-gray-900 mb-1 text-lg">Dark Mode</h4>
-                    <p className="text-sm text-gray-600">Switch dashboard to dark styling</p>
+                    <p className="text-sm text-gray-600">Switch dashboard to dark styling</
+p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" checked={settings.darkMode} onChange={(e) => setSettings({ ...settings, darkMode: e.target.checked })} className="sr-only peer" />
-                    <div className="w-14 h-7 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-blue-600 shadow-inner"></div>
+                    <input type="checkbox" checked={settings.darkMode} onChange={(e) => 
+setSettings({ ...settings, darkMode: e.target.checked })} className="sr-only peer" />
+                    <div className="w-14 h-7 bg-gray-300 peer-focus:outline-none peer-
+focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-
+full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] 
+after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full 
+after:h-6 after:w-6 after:transition-all peer-checked:bg-blue-600 shadow-inner"></div>
                   </label>
                 </div>
-
                 {/* Use Themes Toggle */}
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-
+lg">
                   <div>
                     <h4 className="font-semibold text-gray-900 mb-1">Use Themes</h4>
-                    <p className="text-sm text-gray-600">Enable color themes for your dashboard</p>
+                    <p className="text-sm text-gray-600">Enable color themes for your 
+dashboard</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" checked={settings.useTheme} onChange={(e) => setSettings({ ...settings, useTheme: e.target.checked })} className="sr-only peer" />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    <input type="checkbox" checked={settings.useTheme} onChange={(e) => 
+setSettings({ ...settings, useTheme: e.target.checked })} className="sr-only peer" />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-
+focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-
+full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] 
+after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full 
+after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div> <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-
+focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-
+full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] 
+after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full 
+after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                   </label>
                 </div>
-
                 {/* Themes List */}
                 {settings.useTheme && (
                     <div className="p-4 bg-gray-50 rounded-lg">
                         <div className="mb-3">
-                            <h4 className="font-semibold text-gray-900 mb-1">Color Theme</h4>
-                            <p className="text-sm text-gray-600">Choose your dashboard color palette</p>
+                            <h4 className="font-semibold text-gray-900 mb-1">Color Theme</
+h4>
+                            <p className="text-sm text-gray-600">Choose your dashboard color 
+palette</p>
                         </div>
                         <div className="space-y-2 max-h-64 overflow-y-auto pr-2">
-                            {Object.keys(allThemes).filter(name => name !== 'None').map(themeName => {
+                            {Object.keys(allThemes).filter(name => name !== 
+'None').map(themeName => {
                                 const themeColors = allThemes[themeName];
                                 const isCustom = !!customThemes[themeName];
                                 return (
                                     <div key={themeName} className="relative">
-                                        <button onClick={() => setSettings({ ...settings, colorTheme: themeName })} className={`w-full flex items-center justify-between p-3 rounded-lg border-2 transition-all ${settings.colorTheme === themeName ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300 bg-white'}`}>
+                                        <button onClick={() => setSettings({ ...settings, colorTheme: 
+themeName })} className={`w-full flex items-center justify-between p-3 rounded-lg 
+border-2 transition-all ${settings.colorTheme === themeName ? 'border-blue-500 bg-
+blue-50' : 'border-gray-200 hover:border-gray-300 bg-white'}`}>
                                             <div className="flex items-center gap-3">
                                                 <div className="flex gap-1">
-                                                    <div className="w-6 h-6 rounded" style={{ backgroundColor: themeColors.primary }}></div>
-                                                    <div className="w-6 h-6 rounded" style={{ backgroundColor: themeColors.secondary }}></div>
-                                                    <div className="w-6 h-6 rounded" style={{ backgroundColor: themeColors.accent }}></div>
-                                                    <div className="w-6 h-6 rounded" style={{ backgroundColor: themeColors.highlight }}></div>
+                                                    <div className="w-6 h-6 rounded" 
+style={{ backgroundColor: themeColors.primary }}></div>
+                                                    <div className="w-6 h-6 rounded" 
+style={{ backgroundColor: themeColors.secondary }}></div>
+                                                    <div className="w-6 h-6 rounded" 
+style={{ backgroundColor: themeColors.accent }}></div>
+                                                    <div className="w-6 h-6 rounded" 
+style={{ backgroundColor: themeColors.highlight }}></div>
                                                 </div>
-                                                <span className="font-medium text-gray-900">{themeName}</span>
-                                                {isCustom && <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-semibold">Custom</span>}
+                                                <span className="font-medium text-
+gray-900">{themeName}</span>
+                                                {isCustom && <span className="text-xs bg-purple-100 
+text-purple-700 px-2 py-0.5 rounded-full font-semibold">Custom</span>}
                                             </div>
                                             {isCustom && (
                                                 <button onClick={(e) => {
                                                     e.stopPropagation();
-                                                    if (confirm(`Delete custom theme "${themeName}"?`)) {
-                                                        const updatedThemes = { ...customThemes };
+                                                    if (confirm(`Delete custom theme "${themeName}"?`)) { const updatedThemes = { ...customThemes };
                                                         delete updatedThemes[themeName];
                                                         setCustomThemes(updatedThemes);
-                                                        
                                                         if (settings.colorTheme === themeName) {
-                                                            setSettings({ ...settings, colorTheme: 'Ocean Bliss' });
+                                                            setSettings({ ...settings, colorTheme: 'Ocean 
+Bliss' });
                                                         }
                                                     }
-                                                }} className="p-1.5 hover:bg-red-100 rounded transition-colors text-red-600" title="Delete this theme">
+                                                }} className="p-1.5 hover:bg-red-100 rounded 
+transition-colors text-red-600" title="Delete this theme">
                                                     <Trash2 size={16} />
                                                 </button>
                                             )}
@@ -1043,61 +1337,105 @@ function App() {
                                 );
                             })}
                         </div>
-                        
-                        <button onClick={() => setShowCustomThemeCreator(!showCustomThemeCreator)} className="w-full mt-3 py-2 px-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-lg font-medium transition-all flex items-center justify-center gap-2">
+                        <button onClick={() => setShowCustomThemeCreator(!
+showCustomThemeCreator)} className="w-full mt-3 py-2 px-4 bg-gradient-to-r from-
+purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-lg 
+font-medium transition-all flex items-center justify-center gap-2">
                             <Plus size={18} />
-                            {showCustomThemeCreator ? 'Hide Theme Creator' : 'Create Custom Theme'}
+                            {showCustomThemeCreator ? 'Hide Theme Creator' : 'Create Custom 
+Theme'}
                         </button>
-
                         {/* Custom Theme Creator Form */}
                         {showCustomThemeCreator && (
-                            <div className="mt-4 p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg border-2 border-purple-300">
-                                <h5 className="font-bold text-gray-900 mb-3 flex items-center gap-2">Custom Theme Creator</h5>
+                            <div className="mt-4 p-4 bg-gradient-to-br from-purple-50 to-pink-50 
+rounded-lg border-2 border-purple-300">
+                                <h5 className="font-bold text-gray-900 mb-3 flex items-center 
+gap-2">Custom Theme Creator</h5>
                                 <div className="space-y-3">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Theme Name</label>
-                                        <input type="text" value={customTheme.name} onChange={(e) => setCustomTheme({ ...customTheme, name: e.target.value })} placeholder="My Awesome Theme" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" />
+                                        <label className="block text-sm font-medium text-gray-700 
+mb-1">Theme Name</label>
+                                        <input type="text" value={customTheme.name} 
+onChange={(e) => setCustomTheme({ ...customTheme, name: e.target.value })} 
+placeholder="My Awesome Theme" className="w-full px-3 py-2 border border-
+gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" />
                                     </div>
                                     <div className="grid grid-cols-2 gap-3">
-                                        <div><label className="block text-sm font-medium text-gray-700 mb-1">Background</label><input type="color" value={customTheme.background} onChange={(e) => setCustomTheme({ ...customTheme, background: e.target.value })} className="w-full h-10 rounded border border-gray-300 cursor-pointer" /></div>
-                                        <div><label className="block text-sm font-medium text-gray-700 mb-1">Card Background</label><input type="color" value={customTheme.cardBg} onChange={(e) => setCustomTheme({ ...customTheme, cardBg: e.target.value })} className="w-full h-10 rounded border border-gray-300 cursor-pointer" /></div>
-                                        <div><label className="block text-sm font-medium text-gray-700 mb-1">Primary</label><input type="color" value={customTheme.primary} onChange={(e) => setCustomTheme({ ...customTheme, primary: e.target.value })} className="w-full h-10 rounded border border-gray-300 cursor-pointer" /></div>
-                                        <div><label className="block text-sm font-medium text-gray-700 mb-1">Secondary</label><input type="color" value={customTheme.secondary} onChange={(e) => setCustomTheme({ ...customTheme, secondary: e.target.value })} className="w-full h-10 rounded border border-gray-300 cursor-pointer" /></div>
-                                        <div><label className="block text-sm font-medium text-gray-700 mb-1">Accent (INBOX)</label><input type="color" value={customTheme.accent} onChange={(e) => setCustomTheme({ ...customTheme, accent: e.target.value })} className="w-full h-10 rounded border border-gray-300 cursor-pointer" /></div>
-                                        <div><label className="block text-sm font-medium text-gray-700 mb-1">Highlight (COMPLETED)</label><input type="color" value={customTheme.highlight} onChange={(e) => setCustomTheme({ ...customTheme, highlight: e.target.value })} className="w-full h-10 rounded border border-gray-300 cursor-pointer" /></div>
+                                        <div><label className="block text-sm font-medium text-
+gray-700 mb-1">Background</label><input type="color" 
+value={customTheme.background} onChange={(e) => 
+setCustomTheme({ ...customTheme, background: e.target.value })} className="w-full 
+h-10 rounded border border-gray-300 cursor-pointer" /></div> <div><label className="block text-sm font-medium text-
+gray-700 mb-1">Background</label><input type="color" 
+value={customTheme.background} onChange={(e) => 
+setCustomTheme({ ...customTheme, background: e.target.value })} className="w-full 
+h-10 rounded border border-gray-300 cursor-pointer" /></div>
+                                        <div><label className="block text-sm font-medium text-
+gray-700 mb-1">Card Background</label><input type="color" 
+value={customTheme.cardBg} onChange={(e) => setCustomTheme({ ...customTheme, 
+cardBg: e.target.value })} className="w-full h-10 rounded border border-gray-300 
+cursor-pointer" /></div>
+                                        <div><label className="block text-sm font-medium text-
+gray-700 mb-1">Primary</label><input type="color" value={customTheme.primary} 
+onChange={(e) => setCustomTheme({ ...customTheme, primary: e.target.value })} 
+className="w-full h-10 rounded border border-gray-300 cursor-pointer" /></div>
+                                        <div><label className="block text-sm font-medium text-
+gray-700 mb-1">Secondary</label><input type="color" 
+value={customTheme.secondary} onChange={(e) => 
+setCustomTheme({ ...customTheme, secondary: e.target.value })} className="w-full 
+h-10 rounded border border-gray-300 cursor-pointer" /></div>
+                                        <div><label className="block text-sm font-medium text-
+gray-700 mb-1">Accent (INBOX)</label><input type="color" 
+value={customTheme.accent} onChange={(e) => setCustomTheme({ ...customTheme, 
+accent: e.target.value })} className="w-full h-10 rounded border border-gray-300 
+cursor-pointer" /></div>
+                                        <div><label className="block text-sm font-medium text-
+gray-700 mb-1">Highlight (COMPLETED)</label><input type="color" 
+value={customTheme.highlight} onChange={(e) => 
+setCustomTheme({ ...customTheme, highlight: e.target.value })} className="w-full h-10 
+rounded border border-gray-300 cursor-pointer" /></div>
                                     </div>
                                     <button onClick={() => {
-                                        if (!customTheme.name.trim()) { alert('Please enter a theme name!'); return; }
-                                        if (allThemes[customTheme.name]) { alert('A theme with this name already exists!'); return; }
-                                        
+                                        if (!customTheme.name.trim()) { alert('Please enter a theme 
+name!'); return; }
+                                        if (allThemes[customTheme.name]) { alert('A theme with this 
+name already exists!'); return; }
                                         // Save directly into the persistent state object
-                                        setCustomThemes(prev => ({ ...prev, [customTheme.name]: { ...customTheme } }));
+                                        setCustomThemes(prev => ({ ...prev, [customTheme.name]: 
+{ ...customTheme } }));
                                         setSettings({ ...settings, colorTheme: customTheme.name });
-                                        
-                                        setCustomTheme({ name: '', background: '#ffffff', cardBg: '#ffffff', primary: '#3b82f6', secondary: '#8b5cf6', accent: '#10b981', highlight: '#f59e0b', dark: '#1f2937', textPrimary: '#1f2937', textSecondary: '#6b7280' });
+                                        setCustomTheme({ name: '', background: '#ffffff', cardBg: 
+'#ffffff', primary: '#3b82f6', secondary: '#8b5cf6', accent: '#10b981', highlight: '#f59e0b', 
+dark: '#1f2937', textPrimary: '#1f2937', textSecondary: '#6b7280' });
                                         setShowCustomThemeCreator(false);
-                                    }} className="w-full py-2 px-4 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white rounded-lg font-bold transition-all">
-                                        Create & Save Theme
-                                    </button>
+                                    }} className="w-full py-2 px-4 bg-gradient-to-r from-green-500 
+to-blue-500 hover:from-green-600 hover:to-blue-600 text-white rounded-lg font-bold 
+transition-all">
+                                        Create & Save Theme </button>
                                 </div>
                             </div>
                         )}
                     </div>
                 )}
               </div>
-
               {/* Right Column - Data Management Exports */}
               <div className="space-y-4">
-                <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-200">
-                  <h4 className="font-bold text-gray-900 mb-1 flex items-center gap-2">Data Export Management</h4>
-                  <p className="text-sm text-gray-600 mb-4">Download your entire dashboard data as a JSON backup or export to Excel as a CSV.</p>
+                <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg 
+border-2 border-blue-200">
+                  <h4 className="font-bold text-gray-900 mb-1 flex items-center gap-2">Data 
+Export Management</h4>
+                  <p className="text-sm text-gray-600 mb-4">Download your entire 
+dashboard data as a JSON backup or export to Excel as a CSV.</p>
                   <div className="space-y-3">
-                    <button onClick={exportJSON} className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium flex justify-center items-center gap-2 transition-colors"><Save size={16} /> Export JSON (Backup)</button>
-                    <button onClick={exportCSV} className="w-full px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium flex justify-center items-center gap-2 transition-colors"><Download size={16} /> Export to Excel (CSV)</button>
+                    <button onClick={exportJSON} className="w-full px-4 py-3 bg-blue-600 
+hover:bg-blue-700 text-white rounded-lg font-medium flex justify-center items-center 
+gap-2 transition-colors"><Save size={16} /> Export JSON (Backup)</button>
+                    <button onClick={exportCSV} className="w-full px-4 py-3 bg-green-600 
+hover:bg-green-700 text-white rounded-lg font-medium flex justify-center items-center 
+gap-2 transition-colors"><Download size={16} /> Export to Excel (CSV)</button>
                   </div>
                 </div>
               </div>
-
             </div>
           </div>
         </div>
@@ -1105,7 +1443,6 @@ function App() {
     </div>
   );
 }
-
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(<App />);
 </script>

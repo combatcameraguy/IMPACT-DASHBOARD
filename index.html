@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>IMPACT DataTrak</title>
+<title>IMPACT Intake Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Kanit:wght@400;600;700&display=swap" rel="stylesheet">
@@ -358,7 +358,7 @@ function App() {
   
   const groups = { group1: { title: 'INBOX', bgColor: theme.accent }, group2: { title: 'Follow Up', bgColor: theme.highlight } }; 
   if (loading) return <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#1f2937' }}><div className="text-white text-lg animate-pulse">Loading...</div></div>;
-  if (!user) return ( <div className="min-h-screen flex items-center justify-center p-6 bg-gray-900"> <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8"> <div className="text-center mb-8"><Lock size={40} className="mx-auto text-blue-500 mb-4" /><h1 className="text-3xl font-bold text-gray-900" style={{ fontFamily: '"Gotham", "Montserrat", sans-serif' }}>IMPACT DataTrak</h1></div> <form onSubmit={handleLogin} className="space-y-4"> <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="your@email.com" required /> <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="........" required /> {authError && <div className="bg-red-50 text-red-700 px-4 py-3 rounded-lg text-sm">{authError}</div>} <button type="submit" className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg">Sign In</button> </form> </div> </div> );
+  if (!user) return ( <div className="min-h-screen flex items-center justify-center p-6 bg-gray-900"> <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8"> <div className="text-center mb-8"><Lock size={40} className="mx-auto text-blue-500 mb-4" /><h1 className="text-3xl font-bold text-gray-900" style={{ fontFamily: '"Gotham", "Montserrat", sans-serif' }}>IMPACT Impact Dashboard</h1></div> <form onSubmit={handleLogin} className="space-y-4"> <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="your@email.com" required /> <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="........" required /> {authError && <div className="bg-red-50 text-red-700 px-4 py-3 rounded-lg text-sm">{authError}</div>} <button type="submit" className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg">Sign In</button> </form> </div> </div> );
   
   return (
     <div className={`min-h-screen p-4 ${resizingColumn ? 'cursor-col-resize' : ''}`} style={{ backgroundColor: theme.background }}>
@@ -366,7 +366,7 @@ function App() {
       <div className="rounded-xl shadow-lg p-4 mb-4" style={{ backgroundColor: theme.cardBg || theme.background }}>
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-end gap-3">
-            <h1 className="text-4xl font-extrabold tracking-tight" style={{ color: theme.textPrimary, fontFamily: '"Gotham", "Montserrat", sans-serif' }}>IMPACT DataTrak</h1>
+            <h1 className="text-4xl font-extrabold tracking-tight" style={{ color: theme.textPrimary, fontFamily: '"Gotham", "Montserrat", sans-serif' }}>IMPACT Intake Dashboard</h1>
             <div className="flex flex-col pb-1">
                 <span className="text-sm font-medium text-gray-500">v6.0</span>
                 <div className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: theme.textSecondary }}>

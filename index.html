@@ -299,22 +299,72 @@ function App() {
     }
   };
 
-  // DUAL SCROLLBAR LOGIC - UPDATED TO ONLY SYNC TOP AND MAIN
+  // TRUE CUSTOM STUDIO FADER LOGIC
   const totalTableWidth = columnOrder.reduce((acc, key) => acc + (columnWidths[key] || 150), 0);
-  const topScrollRef = useRef(null);
   const mainScrollRef = useRef(null);
-  const activeScroller = useRef(null);
+  const faderTrackRef = useRef(null);
+  const isDraggingFader = useRef(false);
+  const [faderState, setFaderState] = useState({ percent: 0, widthRatio: 1 });
 
-  const handleSyncedScroll = (source) => (e) => {
-    if (activeScroller.current && activeScroller.current !== source) return;
-    activeScroller.current = source;
-    const scrollLeft = e.currentTarget.scrollLeft;
-    
-    if (source !== 'top' && topScrollRef.current) topScrollRef.current.scrollLeft = scrollLeft;
-    if (source !== 'main' && mainScrollRef.current) mainScrollRef.current.scrollLeft = scrollLeft;
-    
-    clearTimeout(window.scrollTimeout);
-    window.scrollTimeout = setTimeout(() => { activeScroller.current = null; }, 50);
+  // Calculate fader width dynamically based on visible table ratio
+  useEffect(() => {
+      const updateFader = () => {
+          if (mainScrollRef.current) {
+              const { clientWidth, scrollWidth, scrollLeft } = mainScrollRef.current;
+              const ratio = Math.min(1, clientWidth / (scrollWidth || 1));
+              const maxScroll = scrollWidth - clientWidth;
+              const percent = maxScroll > 0 ? (scrollLeft / maxScroll) : 0;
+              setFaderState({ percent, widthRatio: ratio });
+          }
+      };
+      updateFader();
+      window.addEventListener('resize', updateFader);
+      return () => window.removeEventListener('resize', updateFader);
+  }, [columnOrder, columnWidths, tasks]);
+
+  const handleMainScroll = (e) => {
+      if (isDraggingFader.current) return;
+      const { scrollLeft, scrollWidth, clientWidth } = e.currentTarget;
+      const maxScroll = scrollWidth - clientWidth;
+      setFaderState(prev => ({ ...prev, percent: maxScroll > 0 ? scrollLeft / maxScroll : 0 }));
+  };
+
+  const handleFaderInteraction = (e) => {
+      e.preventDefault();
+      isDraggingFader.current = true;
+      document.body.style.cursor = 'grabbing';
+      document.body.style.userSelect = 'none';
+
+      const moveFader = (moveEvent) => {
+          if (!faderTrackRef.current || !mainScrollRef.current) return;
+          const trackRect = faderTrackRef.current.getBoundingClientRect();
+          const { scrollWidth, clientWidth } = mainScrollRef.current;
+          const maxTableScroll = scrollWidth - clientWidth;
+          
+          const trackWidth = trackRect.width;
+          const thumbPixels = faderState.widthRatio * trackWidth;
+          const maxThumbTravel = trackWidth - thumbPixels;
+          
+          // Calculate where the mouse is relative to the track, centered on thumb
+          let px = moveEvent.clientX - trackRect.left;
+          let percent = maxThumbTravel > 0 ? (px - (thumbPixels / 2)) / maxThumbTravel : 0;
+          percent = Math.max(0, Math.min(1, percent)); // clamp strictly 0 to 1
+
+          setFaderState(prev => ({ ...prev, percent }));
+          mainScrollRef.current.scrollLeft = percent * maxTableScroll;
+      };
+
+      const stopFader = () => {
+          isDraggingFader.current = false;
+          document.body.style.cursor = '';
+          document.body.style.userSelect = '';
+          window.removeEventListener('mousemove', moveFader);
+          window.removeEventListener('mouseup', stopFader);
+      };
+
+      window.addEventListener('mousemove', moveFader);
+      window.addEventListener('mouseup', stopFader);
+      moveFader(e); // Trigger immediate jump to where the user clicked
   };
 
   const updateTask = (id, field, value) => { setTasks(prev => prev.map(task => { if (task.id === id) { const updatedTask = {...task, [field]: value }; if (field === 'pipelineStatus') { if (value === 'Done') updatedTask.group = 'group2'; else if (task.pipelineStatus === 'Done' && value !== 'Done') updatedTask.group = 'group1'; } if (field === 'followUpRequired') { if (value === 'Yes') updatedTask.group = 'group2'; else if (value === 'No' && task.group === 'group2') updatedTask.group = 'group1'; } return updatedTask; } return task; })); };
@@ -487,14 +537,42 @@ function App() {
       {/* SYNCHRONIZED SCROLL CONTAINER - overflow-hidden returned for clean corners */}
       <div className="rounded-xl shadow-lg relative bg-white overflow-hidden" style={{ backgroundColor: theme.background }}>
         
-        {/* TOP THICK SCROLLBAR */}
-        <div ref={topScrollRef} onScroll={handleSyncedScroll('top')} className="thick-scrollbar overflow-x-auto w-full border-b" style={{ borderColor: settings.darkMode ? '#4a4a4a' : '#e5e7eb' }}>
-            <div style={{ width: `${totalTableWidth}px`, height: '1px' }}></div>
+        {{/* CUSTOM STUDIO FADER (Replaces standard scrollbar entirely) */}
+      <div className="w-full px-8 py-10 border-b relative" style={{ borderColor: settings.darkMode ? '#4a4a4a' : '#e5e7eb', backgroundColor: theme.background }}>
+        <div 
+            ref={faderTrackRef}
+            onMouseDown={handleFaderInteraction}
+            className="w-full relative rounded-full shadow-inner cursor-pointer transition-colors"
+            style={{ height: '14px', backgroundColor: settings.darkMode ? '#1f2937' : '#e2e8f0' }}
+        >
+            {(() => {
+                // Calculate percentage widths cleanly
+                const thumbW = Math.max(5, faderState.widthRatio * 100); 
+                return (
+                    <div 
+                        className="absolute top-1/2 -translate-y-1/2 rounded-xl shadow-lg transition-colors hover:bg-blue-500 flex items-center justify-center cursor-grab active:cursor-grabbing border-2"
+                        style={{
+                            height: '56px', // Massive tactile height
+                            width: `${thumbW}%`, // Scales to window, min 5% width
+                            left: `calc(${faderState.percent * 100}% - (${faderState.percent} * ${thumbW}%))`, // Perfectly offsets the edges
+                            backgroundColor: settings.darkMode ? '#4b5563' : '#64748b',
+                            borderColor: settings.darkMode ? '#374151' : '#94a3b8'
+                        }}
+                    >
+                        {/* Fader Tactical Grips */}
+                        <div className="flex gap-1.5 opacity-60">
+                            <div className="w-1 h-8 bg-white rounded-full"></div>
+                            <div className="w-1 h-8 bg-white rounded-full"></div>
+                            <div className="w-1 h-8 bg-white rounded-full"></div>
+                        </div>
+                    </div>
+                );
+            })()}
         </div>
+      </div>
 
-        {/* MAIN DATA VIEW (Groups and Tables wrapped together) */}
-        <div ref={mainScrollRef} onScroll={handleSyncedScroll('main')} className="hide-native-scroll overflow-x-auto w-full pb-4">
-            
+      {/* MAIN DATA VIEW (Groups and Tables wrapped together) */}
+      <div ref={mainScrollRef} onScroll={handleMainScroll} className="hide-native-scroll overflow-x-auto w-full pb-4">
             <div style={{ minWidth: `${totalTableWidth}px` }}>
                 {Object.entries(groups).map(([groupId, groupData]) => { 
                     // NEW: Filter against filteredTasks instead of raw tasks

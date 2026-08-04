@@ -79,18 +79,18 @@ tbody tr.calendar-expanded td > div {
   transition: transform 2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* --- SUPER THICK AESTHETIC SCROLLBAR CSS --- */
+/* --- MIXER-STYLE SLIDER SCROLLBAR CSS --- */
 .thick-scrollbar::-webkit-scrollbar {
-  height: 36px; /* Massive, easily grabbable size */
+  height: 38px; /* Exactly matches the ~38px height of the Branch/Follow-up buttons */
 }
 .thick-scrollbar::-webkit-scrollbar-track {
-  background: rgba(156, 163, 175, 0.15);
-  border-radius: 0; /* Kept flat so it fits the top header perfectly */
+  background: rgba(156, 163, 175, 0.1); /* Very subtle track background */
+  border-radius: 4px; /* Minimalist rounding */
 }
 .thick-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(107, 114, 128, 0.6);
-  border-radius: 18px; /* Creates a pill shape inside the track */
-  border: 6px solid transparent; /* Thick transparent border pushes the thumb in, making it look premium */
+  background: rgba(107, 114, 128, 0.5);
+  border-radius: 4px; /* Matches the Tailwind 'rounded' class used on the buttons */
+  border: 4px solid transparent; /* Insets the slider slightly for a clean track look */
   background-clip: padding-box;
   cursor: pointer;
 }
@@ -100,7 +100,7 @@ tbody tr.calendar-expanded td > div {
 /* Firefox Fallback */
 .thick-scrollbar {
   scrollbar-width: auto;
-  scrollbar-color: rgba(107, 114, 128, 0.6) rgba(156, 163, 175, 0.15);
+  scrollbar-color: rgba(107, 114, 128, 0.5) rgba(156, 163, 175, 0.1);
 }
 
 /* Hides native scrollbar for the main content container */
@@ -415,7 +415,7 @@ function App() {
         </div>
       </div>
 
-      {/* SYNCHRONIZED SCROLL CONTAINER - RESTORED overflow-hidden FOR AESTHETICS */}
+      {/* SYNCHRONIZED SCROLL CONTAINER - overflow-hidden returned for clean corners */}
       <div className="rounded-xl shadow-lg relative bg-white overflow-hidden" style={{ backgroundColor: theme.background }}>
         
         {/* TOP THICK SCROLLBAR */}
@@ -485,7 +485,6 @@ function App() {
                 })}
             </div>
         </div>
-
       </div>
 
       {deleteConfirm && ( <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"> <div className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full"> <div className="flex items-start gap-4"> <div className="flex-shrink-0 w-12 h-12 rounded-full bg-red-100 flex items-center justify-center"><Trash2 size={24} className="text-red-600" /></div> <div> <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete Row?</h3> <p className="text-gray-600 text-sm mb-4">Are you sure you want to delete this entry? This action cannot be undone.</p> <div className="flex gap-3 justify-end">

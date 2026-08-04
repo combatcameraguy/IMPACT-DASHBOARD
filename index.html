@@ -217,8 +217,72 @@ function App() {
   const handleFileLoad = (event) => { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (e) => { try { const content = e.target.result; const isCSV = file.name.toLowerCase().endsWith('.csv'); if (isCSV) { const parsedData = parseCSV(content); const newTasks = parsedData.map((row, index) => { const ts = formatToYYYYMMDD(row['Timestamp'] || new Date().toISOString().split('T')[0]); const etsDateStr = formatToYYYYMMDD(row[Object.keys(row).find(k => k.toLowerCase().includes('ets'))] || ''); const terminalLeaveStr = formatToYYYYMMDD(row[Object.keys(row).find(k => k.toLowerCase().includes('terminal leave'))] || ''); return { id: Math.max(...(tasks.length ? tasks.map(t => t.id) : [0]), 0) + index + 1, group: 'group1', timestamp: ts, fullName: row[Object.keys(row).find(k => k.toLowerCase().includes('name'))] || '', phone: row[Object.keys(row).find(k => k.toLowerCase().includes('phone'))] || '', email: row[Object.keys(row).find(k => k.toLowerCase().includes('email'))] || '', currentStatus: row[Object.keys(row).find(k => k.toLowerCase().includes('current status'))] || '', branchOfService: row[Object.keys(row).find(k => k.toLowerCase().includes('branch'))] || 'Not started', followUpRequired: 'Pending', agreeToContact: row[Object.keys(row).find(k => k.toLowerCase().includes('agree'))] || '', mos: row[Object.keys(row).find(k => k.toLowerCase().includes('mos'))] || '', payGrade: row[Object.keys(row).find(k => k.toLowerCase().includes('pay grade'))] || '', etsDate: etsDateStr, terminalLeave: terminalLeaveStr, location: row[Object.keys(row).find(k => k.toLowerCase().includes('city, state'))] || '', transportation: row[Object.keys(row).find(k => k.toLowerCase().includes('transportation'))] || '', opportunities: row[Object.keys(row).find(k => k.toLowerCase().includes('opportunities'))] || '', skills: row[Object.keys(row).find(k => k.toLowerCase().includes('skills'))] || '', areasOfInterest: row[Object.keys(row).find(k => k.toLowerCase().includes('areas'))] || '', availability: row[Object.keys(row).find(k => k.toLowerCase().includes('availability'))] || '' }; }); setTasks(prev => [...prev, ...newTasks]); alert(`CSV loaded successfully!\n\nImported ${newTasks.length} intake forms to your INBOX.`); } else { const loadedData = JSON.parse(content); if (loadedData.tasks && Array.isArray(loadedData.tasks)) { setTasks(loadedData.tasks); if (loadedData.columnWidths) setColumnWidths(loadedData.columnWidths); if (loadedData.columnOrder) setColumnOrder(loadedData.columnOrder); if (loadedData.settings) setSettings(loadedData.settings); if (loadedData.expandedGroups) setExpandedGroups(loadedData.expandedGroups); if (loadedData.columns) setColumns(loadedData.columns); if (loadedData.customThemes) setCustomThemes(loadedData.customThemes); alert('Dashboard backup data loaded successfully!'); } } } catch (error) { alert('Error loading file: ' + error.message); } }; reader.readAsText(file); event.target.value = ''; };
   const exportJSON = () => { const dataToSave = { tasks, columnWidths, columnOrder, settings, expandedGroups, columns, customThemes, savedAt: new Date().toISOString(), version: '6.0' }; const jsonString = JSON.stringify(dataToSave, null, 2); const now = new Date(); const filename = `IMPACT-BACKUP-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}.json`; const blob = new Blob([jsonString], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); };
   const exportCSV = () => { if(tasks.length === 0) return alert('No data to export!'); const exportColumns = columnOrder.filter(k => k !== 'drag' && k !== 'actions'); const headers = exportColumns.map(k => columns[k]?.label || k); const csvRows = tasks.map(t => exportColumns.map(k => `"${(t[k] || '').replace(/"/g, '""')}"`).join(',')); const csvContent = [headers.join(','), ...csvRows].join('\n'); const now = new Date(); const filename = `IMPACT-Export-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}.csv`; const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); };
+  
   useEffect(() => { const unsubscribe = auth.onAuthStateChanged((currentUser) => { setUser(currentUser); setLoading(false); }); return () => unsubscribe(); }, []);
-  useEffect(() => { if (user && database) { setFirebaseSynced(false); setInitialLoadComplete(false); let loadedCount = 0; const totalLoads = 7; const checkAllLoaded = () => { loadedCount++; if (loadedCount === totalLoads) { setFirebaseSynced(true); setInitialLoadComplete(true); } }; const tasksRef = database.ref('userData/tasks'); const tasksListener = tasksRef.on('value', (s) => { const d = s.val(); if (d) setTasks(d); if (loadedCount < totalLoads) checkAllLoaded(); }); const widthsRef = database.ref('userData/columnWidths'); const widthsListener = widthsRef.on('value', (s) => { const d = s.val(); if (d) setColumnWidths(d); if (loadedCount < totalLoads) checkAllLoaded(); }); const orderRef = database.ref('userData/columnOrder'); const orderListener = orderRef.on('value', (s) => { const d = s.val(); if (d) setColumnOrder(d); if (loadedCount < totalLoads) checkAllLoaded(); }); const groupsRef = database.ref('userData/expandedGroups'); const groupsListener = groupsRef.on('value', (s) => { const d = s.val(); if (d) setExpandedGroups(d); if (loadedCount < totalLoads) checkAllLoaded(); }); const settingsRef = database.ref('userData/settings'); const settingsListener = settingsRef.on('value', (s) => { const d = s.val(); if (d) setSettings(d); if (loadedCount < totalLoads) checkAllLoaded(); }); const columnsRef = database.ref('userData/columns'); const columnsListener = columnsRef.on('value', (s) => { const d = s.val(); if (d) { setColumns(d); localStorage.setItem('comcam_columns_v6', JSON.stringify(d)); } if (loadedCount < totalLoads) checkAllLoaded(); }); const themesRef = database.ref('userData/customThemes'); const themesListener = themesRef.on('value', (s) => { const d = s.val(); if (d) { setCustomThemes(d); localStorage.setItem('comcam_customThemes', JSON.stringify(d)); } if (loadedCount < totalLoads) checkAllLoaded(); }); return () => { tasksRef.off('value', tasksListener); widthsRef.off('value', widthsListener); orderRef.off('value', orderListener); groupsRef.off('value', groupsListener); settingsRef.off('value', settingsListener); columnsRef.off('value', columnsListener); themesRef.off('value', themesListener); }; } }, [user]);
+  
+  // FIX: This listener has been updated so that when Firebase pushes your old data, 
+  // it intercepts it and injects the new "Follow Up" column automatically.
+  useEffect(() => { 
+    if (user && database) { 
+        setFirebaseSynced(false); 
+        setInitialLoadComplete(false); 
+        let loadedCount = 0; 
+        const totalLoads = 7; 
+        const checkAllLoaded = () => { loadedCount++; if (loadedCount === totalLoads) { setFirebaseSynced(true); setInitialLoadComplete(true); } }; 
+        
+        const tasksRef = database.ref('userData/tasks'); 
+        const tasksListener = tasksRef.on('value', (s) => { const d = s.val(); if (d) setTasks(d); if (loadedCount < totalLoads) checkAllLoaded(); }); 
+        
+        const widthsRef = database.ref('userData/columnWidths'); 
+        const widthsListener = widthsRef.on('value', (s) => { 
+            const d = s.val(); 
+            if (d) { 
+                const merged = { ...d };
+                if (!merged.followUpRequired) merged.followUpRequired = 130;
+                setColumnWidths(merged); 
+            } 
+            if (loadedCount < totalLoads) checkAllLoaded(); 
+        }); 
+        
+        const orderRef = database.ref('userData/columnOrder'); 
+        const orderListener = orderRef.on('value', (s) => { 
+            const d = s.val(); 
+            if (d) { 
+                let merged = [...d];
+                if (!merged.includes('followUpRequired')) {
+                    const insertIdx = merged.indexOf('fullName') !== -1 ? merged.indexOf('fullName') + 1 : 2;
+                    merged.splice(insertIdx, 0, 'followUpRequired');
+                }
+                setColumnOrder(merged); 
+            } 
+            if (loadedCount < totalLoads) checkAllLoaded(); 
+        }); 
+        
+        const groupsRef = database.ref('userData/expandedGroups'); 
+        const groupsListener = groupsRef.on('value', (s) => { const d = s.val(); if (d) setExpandedGroups(d); if (loadedCount < totalLoads) checkAllLoaded(); }); 
+        
+        const settingsRef = database.ref('userData/settings'); 
+        const settingsListener = settingsRef.on('value', (s) => { const d = s.val(); if (d) setSettings(d); if (loadedCount < totalLoads) checkAllLoaded(); }); 
+        
+        const columnsRef = database.ref('userData/columns'); 
+        const columnsListener = columnsRef.on('value', (s) => { 
+            const d = s.val(); 
+            if (d) { 
+                const merged = { ...d };
+                if (!merged.followUpRequired) merged.followUpRequired = { label: 'Follow Up?', icon: 'none' };
+                setColumns(merged); 
+                localStorage.setItem('comcam_columns_v6', JSON.stringify(merged)); 
+            } 
+            if (loadedCount < totalLoads) checkAllLoaded(); 
+        }); 
+        
+        const themesRef = database.ref('userData/customThemes'); 
+        const themesListener = themesRef.on('value', (s) => { const d = s.val(); if (d) { setCustomThemes(d); localStorage.setItem('comcam_customThemes', JSON.stringify(d)); } if (loadedCount < totalLoads) checkAllLoaded(); }); 
+        
+        return () => { tasksRef.off('value', tasksListener); widthsRef.off('value', widthsListener); orderRef.off('value', orderListener); groupsRef.off('value', groupsListener); settingsRef.off('value', settingsListener); columnsRef.off('value', columnsListener); themesRef.off('value', themesListener); }; 
+    } 
+  }, [user]);
+
   useEffect(() => { try { localStorage.setItem('comcam_tasks', JSON.stringify(tasks)); if (user && database && initialLoadComplete) database.ref('userData/tasks').set(tasks); } catch(e){} }, [tasks, user, initialLoadComplete]);
   useEffect(() => { try { localStorage.setItem('comcam_columnWidths_v6', JSON.stringify(columnWidths)); if (user && database && initialLoadComplete) database.ref('userData/columnWidths').set(columnWidths); } catch(e){} }, [columnWidths, user, initialLoadComplete]);
   useEffect(() => { try { localStorage.setItem('comcam_columnOrder_v6', JSON.stringify(columnOrder)); if (user && database && initialLoadComplete) database.ref('userData/columnOrder').set(columnOrder); } catch(e){} }, [columnOrder, user, initialLoadComplete]);

@@ -79,31 +79,31 @@ tbody tr.calendar-expanded td > div {
   transition: transform 2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* --- DOUBLE-SIZED THICK SCROLLBAR CSS --- */
+/* --- SUPER THICK AESTHETIC SCROLLBAR CSS --- */
 .thick-scrollbar::-webkit-scrollbar {
-  height: 24px; /* More than double the standard size */
+  height: 36px; /* Massive, easily grabbable size */
 }
 .thick-scrollbar::-webkit-scrollbar-track {
   background: rgba(156, 163, 175, 0.15);
-  border-radius: 12px;
+  border-radius: 0; /* Kept flat so it fits the top header perfectly */
 }
 .thick-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(107, 114, 128, 0.5);
-  border-radius: 12px;
-  border: 4px solid transparent; /* Creates padding around the thumb */
-  background-clip: content-box;
+  background: rgba(107, 114, 128, 0.6);
+  border-radius: 18px; /* Creates a pill shape inside the track */
+  border: 6px solid transparent; /* Thick transparent border pushes the thumb in, making it look premium */
+  background-clip: padding-box;
   cursor: pointer;
 }
 .thick-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(59, 130, 246, 0.7); /* Turns blue on hover */
+  background-color: rgba(59, 130, 246, 0.8); /* Turns blue on hover */
 }
 /* Firefox Fallback */
 .thick-scrollbar {
   scrollbar-width: auto;
-  scrollbar-color: rgba(107, 114, 128, 0.5) rgba(156, 163, 175, 0.15);
+  scrollbar-color: rgba(107, 114, 128, 0.6) rgba(156, 163, 175, 0.15);
 }
 
-/* Hides native scrollbar for the main content container to prevent duplicates */
+/* Hides native scrollbar for the main content container */
 .hide-native-scroll::-webkit-scrollbar {
   height: 0px;
   width: 0px;
@@ -239,11 +239,10 @@ function App() {
   const baseTheme = settings.useTheme ? (allThemes[settings.colorTheme] || allThemes['None']) : allThemes['None']; const theme = settings.darkMode ? { ...baseTheme, background: '#2e2e2e', cardBg: '#2e2e2e', textPrimary: '#f9fafb', textSecondary: '#d1d5db' } : baseTheme;
   const toggleGroup = (groupId) => setExpandedGroups(prev => ({ ...prev, [groupId]: !prev[groupId] }));
   
-  // DUAL SCROLLBAR LOGIC
+  // DUAL SCROLLBAR LOGIC - UPDATED TO ONLY SYNC TOP AND MAIN
   const totalTableWidth = columnOrder.reduce((acc, key) => acc + (columnWidths[key] || 150), 0);
   const topScrollRef = useRef(null);
   const mainScrollRef = useRef(null);
-  const bottomScrollRef = useRef(null);
   const activeScroller = useRef(null);
 
   const handleSyncedScroll = (source) => (e) => {
@@ -253,7 +252,6 @@ function App() {
     
     if (source !== 'top' && topScrollRef.current) topScrollRef.current.scrollLeft = scrollLeft;
     if (source !== 'main' && mainScrollRef.current) mainScrollRef.current.scrollLeft = scrollLeft;
-    if (source !== 'bottom' && bottomScrollRef.current) bottomScrollRef.current.scrollLeft = scrollLeft;
     
     clearTimeout(window.scrollTimeout);
     window.scrollTimeout = setTimeout(() => { activeScroller.current = null; }, 50);
@@ -417,12 +415,11 @@ function App() {
         </div>
       </div>
 
-      {/* SYNCHRONIZED DUAL-SCROLLBAR CONTAINER */}
-      {/* REMOVED overflow-hidden so the bottom scrollbar can stick to the window! */}
-      <div className="rounded-xl shadow-lg relative bg-white" style={{ backgroundColor: theme.background }}>
+      {/* SYNCHRONIZED SCROLL CONTAINER - RESTORED overflow-hidden FOR AESTHETICS */}
+      <div className="rounded-xl shadow-lg relative bg-white overflow-hidden" style={{ backgroundColor: theme.background }}>
         
         {/* TOP THICK SCROLLBAR */}
-        <div ref={topScrollRef} onScroll={handleSyncedScroll('top')} className="thick-scrollbar overflow-x-auto w-full border-b rounded-t-xl" style={{ borderColor: settings.darkMode ? '#4a4a4a' : '#e5e7eb' }}>
+        <div ref={topScrollRef} onScroll={handleSyncedScroll('top')} className="thick-scrollbar overflow-x-auto w-full border-b" style={{ borderColor: settings.darkMode ? '#4a4a4a' : '#e5e7eb' }}>
             <div style={{ width: `${totalTableWidth}px`, height: '1px' }}></div>
         </div>
 
@@ -487,11 +484,6 @@ function App() {
                     ); 
                 })}
             </div>
-        </div>
-
-        {/* BOTTOM THICK STICKY SCROLLBAR */}
-        <div ref={bottomScrollRef} onScroll={handleSyncedScroll('bottom')} className="thick-scrollbar overflow-x-auto w-full sticky bottom-0 z-50 rounded-b-xl border-t border-gray-200" style={{ backgroundColor: settings.darkMode ? 'rgba(46,46,46,0.9)' : 'rgba(255,255,255,0.95)', backdropFilter: 'blur(8px)' }}>
-            <div style={{ width: `${totalTableWidth}px`, height: '1px' }}></div>
         </div>
 
       </div>

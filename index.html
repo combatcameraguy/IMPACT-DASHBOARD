@@ -303,7 +303,7 @@ function App() {
   useEffect(() => { 
     if (user && database) { 
         setFirebaseSynced(false); setInitialLoadComplete(false); let loadedCount = 0; const totalLoads = 7; const checkAllLoaded = () => { loadedCount++; if (loadedCount === totalLoads) { setFirebaseSynced(true); setInitialLoadComplete(true); } }; 
-        const tasksRef = database.ref('userData/tasks'); const tasksListener = tasksRef.on('value', (s) => { const d = s.val(); if (d) setTasks(d); if (loadedCount < totalLoads) checkAllLoaded(); }); 
+        const tasksRef = database.ref('userData/tasks'); const tasksListener = tasksRef.on('value', (s) => { const d = s.val(); if (d) { setTasks(Array.isArray(d) ? d : Object.values(d)); } if (loadedCount < totalLoads) checkAllLoaded(); }); 
         const widthsRef = database.ref('userData/columnWidths'); const widthsListener = widthsRef.on('value', (s) => { const d = s.val(); if (d) { const merged = { ...d }; if (!merged.followUpRequired) merged.followUpRequired = 130; setColumnWidths(merged); } if (loadedCount < totalLoads) checkAllLoaded(); }); 
         const orderRef = database.ref('userData/columnOrder'); const orderListener = orderRef.on('value', (s) => { const d = s.val(); if (d) { let merged = [...d]; if (!merged.includes('followUpRequired')) { const insertIdx = merged.indexOf('fullName') !== -1 ? merged.indexOf('fullName') + 1 : 2; merged.splice(insertIdx, 0, 'followUpRequired'); } setColumnOrder(merged); } if (loadedCount < totalLoads) checkAllLoaded(); }); 
         const groupsRef = database.ref('userData/expandedGroups'); const groupsListener = groupsRef.on('value', (s) => { const d = s.val(); if (d) setExpandedGroups(d); if (loadedCount < totalLoads) checkAllLoaded(); }); 

@@ -69,7 +69,7 @@ const EditableHeader = ({ initialLabel, onSave, onCancel }) => {
     const [val, setVal] = useState(initialLabel); useEffect(() => { setVal(initialLabel); }, [initialLabel]);
     return ( <input autoFocus value={val} onChange={e => setVal(e.target.value)} onBlur={() => { if(val.trim() && val !== initialLabel) { onSave(val.trim()); } else { onCancel(); } }} onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); if (e.key === 'Escape') onCancel(); }} className="text-black bg-white px-1 rounded text-sm w-full font-semibold border-b border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 shadow-sm" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }} /> )
 };
-const InlineCalendar = ({ value, onChange, darkMode, onToggle, isExpanded }) => {
+const InlineCalendar = ({ value, onChange, darkMode, onToggle, isExpanded, textSize = "text-sm" }) => {
   const parseSafeDate = (val) => { if (!val) return null; let d = new Date(val.includes('-') && val.length === 10 ? val + 'T00:00:00' : val); return isNaN(d.getTime()) ? null : d; };
   const selectedDate = parseSafeDate(value); const [currentMonth, setCurrentMonth] = useState(selectedDate || new Date());
   useEffect(() => { if (isExpanded && selectedDate) setCurrentMonth(selectedDate); }, [isExpanded, value]);
@@ -78,13 +78,14 @@ const InlineCalendar = ({ value, onChange, darkMode, onToggle, isExpanded }) => 
   const handleDayClick = (day) => { if (day) { const year = currentMonth.getFullYear(); const month = currentMonth.getMonth(); const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`; onChange(dateStr); onToggle(); } };
   const changeMonth = (delta) => { setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + delta, 1)); };
   const days = getDaysInMonth(currentMonth); const monthName = currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  const pyClass = textSize === 'text-base' || textSize === 'text-lg' ? 'py-3' : 'py-2';
   return (
     <div className="w-full relative">
-      <button type="button" onClick={onToggle} className="border rounded px-3 py-2 text-sm hover:border-blue-400 focus:outline-none focus:border-blue-500 w-full text-left flex items-center justify-between" style={{ borderColor: isExpanded ? '#3b82f6' : (darkMode ? '#4a4a4a' : '#e5e7eb'), backgroundColor: darkMode ? '#3a3a3a' : '#ffffff', color: darkMode ? '#ffffff' : '#000000', fontSize: '14px', minHeight: '38px', boxShadow: isExpanded ? '0 0 0 3px rgba(59, 130, 246, 0.2)' : 'none', transition: 'all .2s ease' }}>
-        <span className="font-medium">{formatDisplayDate(value)}</span><div className="chevron-rotate" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}><ChevronDown /></div>
+      <button type="button" onClick={onToggle} className={`border rounded px-3 ${pyClass} hover:border-blue-400 focus:outline-none focus:border-blue-500 w-full text-left flex items-center justify-between`} style={{ borderColor: isExpanded ? '#3b82f6' : (darkMode ? '#4a4a4a' : '#e5e7eb'), backgroundColor: darkMode ? '#3a3a3a' : '#ffffff', color: darkMode ? '#ffffff' : '#000000', minHeight: '38px', boxShadow: isExpanded ? '0 0 0 3px rgba(59, 130, 246, 0.2)' : 'none', transition: 'all .2s ease' }}>
+        <span className={`font-semibold tracking-wide ${textSize}`}>{formatDisplayDate(value)}</span><div className="chevron-rotate" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}><ChevronDown /></div>
       </button>
       {isExpanded && (
-        <div className="mt-1 rounded-lg shadow-xl border-2 z-50 absolute left-0 top-full" style={{ backgroundColor: darkMode ? '#2a2a2a' : '#ffffff', borderColor: '#3b82f6', padding: '16px', width: '360px', animation: 'slideDown 2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards' }}>
+        <div className="mt-1 rounded-lg shadow-xl border-2 z-[60] absolute left-0 top-full" style={{ backgroundColor: darkMode ? '#2a2a2a' : '#ffffff', borderColor: '#3b82f6', padding: '16px', width: '360px', animation: 'slideDown 2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards' }}>
           <div className="flex items-center justify-between mb-4">
             <button type="button" onClick={() => changeMonth(-1)} className="p-2 rounded-lg hover:scale-110 transition-transform font-bold text-xl" style={{ backgroundColor: darkMode ? '#3a3a3a' : '#f3f4f6', color: darkMode ? '#ffffff' : '#000000' }}>&lt;</button>
             <span className="font-bold text-lg" style={{ color: darkMode ? '#ffffff' : '#000000' }}>{monthName}</span>
@@ -217,8 +218,8 @@ function App() {
   
   const [searchQuery, setSearchQuery] = useState('');
   
-  // ADDED NEW WIDGET PRESETS AND DATE RANGE STATE
-  const [chartPresets, setChartPresets] = useState({ followUp: 'pie', branch: 'pie', opportunities: 'bar', status: 'pie', education: 'pie', timeGroup: 'month' });
+  // ADDED NEW WIDGET PRESETS AND DATE RANGE/FILTER STATE
+  const [chartPresets, setChartPresets] = useState({ followUp: 'pie', branch: 'pie', opportunities: 'bar', status: 'pie', education: 'pie', timeGroup: 'month', filterCol: '', filterVal: '' });
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
 
   const loadFromStorage = (key, defaultValue) => { try { const saved = localStorage.getItem(key); return saved ? JSON.parse(saved) : defaultValue; } catch (error) { return defaultValue; } };
@@ -547,29 +548,73 @@ function App() {
                         <div className="flex flex-wrap items-center justify-between mb-6">
                             <h4 className="text-lg font-bold flex items-center gap-2" style={{ color: theme.textPrimary }}><LineChartIcon size={20} className="text-purple-500" /> Intake Volume Over Time</h4> 
                             
-                            {/* NEW: DATE RANGE FILTERS & GROUPING OPTIONS */}
-                            <div className="flex gap-2 items-center flex-wrap mt-2 sm:mt-0">
-                                <span className="text-sm font-medium" style={{ color: theme.textSecondary }}>Filter:</span>
-                                <input type="date" className="text-sm border rounded px-2 py-1" style={{ backgroundColor: theme.cardBg, color: theme.textPrimary }} value={dateRange.start} onChange={e => setDateRange({...dateRange, start: e.target.value})} title="Start Date" />
-                                <span className="text-sm font-medium" style={{ color: theme.textSecondary }}>to</span>
-                                <input type="date" className="text-sm border rounded px-2 py-1" style={{ backgroundColor: theme.cardBg, color: theme.textPrimary }} value={dateRange.end} onChange={e => setDateRange({...dateRange, end: e.target.value})} title="End Date" />
+                            {/* ENHANCED: DATE RANGE FILTERS & GROUPING OPTIONS WITH ANIMATED CALENDARS */}
+                            <div className="flex gap-2 items-center flex-wrap mt-4 sm:mt-0 relative z-50">
                                 
-                                <span className="text-sm font-medium ml-2" style={{ color: theme.textSecondary }}>Group By:</span>
-                                <select className="text-sm border rounded px-2 py-1 font-semibold cursor-pointer" style={{ backgroundColor: theme.cardBg, color: theme.textPrimary }} value={chartPresets.timeGroup} onChange={(e) => setChartPresets({...chartPresets, timeGroup: e.target.value})}> 
+                                <span className="text-sm font-medium mr-1" style={{ color: theme.textSecondary }}>Filter:</span>
+                                <div className="w-48 relative">
+                                    <InlineCalendar 
+                                        value={dateRange.start} 
+                                        onChange={v => setDateRange({...dateRange, start: v})} 
+                                        darkMode={settings.darkMode} 
+                                        isExpanded={expandedDropdown === 'analytics-start'} 
+                                        onToggle={() => setExpandedDropdown(expandedDropdown === 'analytics-start' ? null : 'analytics-start')} 
+                                        textSize="text-base"
+                                    />
+                                </div>
+                                <span className="text-sm font-medium px-2" style={{ color: theme.textSecondary }}>to</span>
+                                <div className="w-48 relative">
+                                    <InlineCalendar 
+                                        value={dateRange.end} 
+                                        onChange={v => setDateRange({...dateRange, end: v})} 
+                                        darkMode={settings.darkMode} 
+                                        isExpanded={expandedDropdown === 'analytics-end'} 
+                                        onToggle={() => setExpandedDropdown(expandedDropdown === 'analytics-end' ? null : 'analytics-end')} 
+                                        textSize="text-base"
+                                    />
+                                </div>
+                                
+                                <span className="text-sm font-medium ml-4 mr-1" style={{ color: theme.textSecondary }}>Category:</span>
+                                <select className="text-base border rounded px-3 py-2 font-semibold cursor-pointer" style={{ backgroundColor: theme.cardBg, color: theme.textPrimary }} value={chartPresets.filterCol} onChange={(e) => setChartPresets({...chartPresets, filterCol: e.target.value, filterVal: ''})}>
+                                    <option value="">All Applicants</option>
+                                    <option value="branchOfService">Branch of Service</option>
+                                    <option value="currentStatus">Military Status</option>
+                                    <option value="educationLevel">Education Level</option>
+                                    <option value="followUpRequired">Follow Up</option>
+                                </select>
+
+                                {chartPresets.filterCol && (
+                                    <select className="text-base border rounded px-3 py-2 font-semibold cursor-pointer ml-2" style={{ backgroundColor: theme.cardBg, color: theme.textPrimary }} value={chartPresets.filterVal} onChange={(e) => setChartPresets({...chartPresets, filterVal: e.target.value})}>
+                                        <option value="">Select Value...</option>
+                                        {Array.from(new Set(tasks.map(t => t[chartPresets.filterCol]).filter(Boolean))).map(val => (
+                                            <option key={val} value={val}>{val}</option>
+                                        ))}
+                                    </select>
+                                )}
+                                
+                                <span className="text-sm font-medium ml-4 mr-1" style={{ color: theme.textSecondary }}>Group:</span>
+                                <select className="text-base border rounded px-3 py-2 font-semibold cursor-pointer" style={{ backgroundColor: theme.cardBg, color: theme.textPrimary }} value={chartPresets.timeGroup} onChange={(e) => setChartPresets({...chartPresets, timeGroup: e.target.value})}> 
                                     <option value="day">Day</option> 
                                     <option value="week">Week</option>
                                     <option value="month">Month</option> 
                                     <option value="quarter">Quarter</option>
                                     <option value="year">Year</option> 
                                 </select>
-                                <button onClick={() => {setDateRange({start:'', end:''})}} className="text-xs text-gray-500 hover:text-red-500 ml-1">Clear</button>
-                                <button onClick={() => handleExportPNG('widget-timeline', 'Timeline-Chart')} className="p-1 hover:bg-gray-200 rounded text-blue-500 ml-2" title="Export PNG"><Download size={16}/></button>
+
+                                <button onClick={() => {setDateRange({start:'', end:''}); setChartPresets({...chartPresets, filterCol: '', filterVal: ''});}} className="text-sm font-bold text-gray-500 hover:text-red-500 ml-3 transition-colors">Clear</button>
+                                <button onClick={() => handleExportPNG('widget-timeline', 'Timeline-Chart')} className="p-2 hover:bg-gray-200 rounded text-blue-500 ml-2 transition-colors" title="Export PNG"><Download size={20}/></button>
                             </div>
                         </div>
                         {(() => { 
                             const counts = {};
                             tasks.forEach(t => {
                                 if (!t.timestamp) return;
+                                
+                                // Category / Column Value Filter logic
+                                if (chartPresets.filterCol && chartPresets.filterVal) {
+                                    if (t[chartPresets.filterCol] !== chartPresets.filterVal) return;
+                                }
+
                                 const d = new Date(t.timestamp);
                                 if (isNaN(d.getTime())) return;
 

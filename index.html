@@ -61,6 +61,7 @@ const Calendar = ({ size = 16 }) => <svg width={size} height={size} viewBox="0 0
 const User = ({ size = 16 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
 const BarChartIcon = ({ size = 16 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>;
 const PieChartIcon = ({ size = 16 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>;
+const LineChartIcon = ({ size = 16 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 17 9 11 13 15 21 7"/></svg>;
 const Lock = ({ size = 64 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>;
 const renderIcon = (iconName) => { switch(iconName) { case 'User': return <User size={16}/>; case 'Calendar': return <Calendar size={16}/>; default: return null; } };
 
@@ -100,26 +101,88 @@ const InlineCalendar = ({ value, onChange, darkMode, onToggle, isExpanded }) => 
 const SimpleBarChart = ({ data, theme }) => {
     const keys = Object.keys(data); if (keys.length === 0) return <div className="text-gray-500 italic p-4 text-center">No data available to chart</div>;
     const max = Math.max(...Object.values(data), 1);
+    
+    // Dynamic multi-color palette for bar charts
+    const chartColors = [theme.primary, theme.secondary, theme.accent, theme.highlight, '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+    
     return (
-        <div className="flex items-end justify-around gap-2 h-48 w-full border-b pb-2 px-2 pt-6" style={{ borderColor: theme.darkMode ? '#4a4a4a' : '#e5e7eb' }}> {keys.map(key => ( <div key={key} className="flex flex-col items-center justify-end w-full group relative" style={{ height: '100%' }}>
+        <div className="flex items-end justify-around gap-2 h-48 w-full border-b pb-2 px-2 pt-6" style={{ borderColor: theme.darkMode ? '#4a4a4a' : '#e5e7eb' }}> 
+            {keys.map((key, index) => {
+                const color = chartColors[index % chartColors.length];
+                return ( 
+                <div key={key} className="flex flex-col items-center justify-end w-full group relative" style={{ height: '100%' }}>
                     <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-8 bg-gray-800 text-white text-xs rounded px-2 py-1 z-10 pointer-events-none whitespace-nowrap">{key}: {data[key]}</div>
-                    <div className="w-full rounded-t transition-all duration-1000 ease-out hover:opacity-80" style={{ height: `${(data[key] / max) * 100}%`, backgroundColor: theme.primary, minHeight: data[key] > 0 ? '4px' : '0' }}></div>
+                    <div className="w-full rounded-t transition-all duration-1000 ease-out hover:opacity-80" style={{ height: `${(data[key] / max) * 100}%`, backgroundColor: color, minHeight: data[key] > 0 ? '4px' : '0' }}></div>
                     <div className="text-[10px] truncate w-full text-center mt-2 font-medium" style={{ color: theme.textSecondary }} title={key}>{key}</div>
-                </div> ))} </div>
+                </div> 
+                )
+            })} 
+        </div>
     )
 };
 
 const SimplePieChart = ({ data, colors, theme }) => {
     const keys = Object.keys(data); if (keys.length === 0) return <div className="text-gray-500 italic p-4 text-center">No data available to chart</div>;
     const total = Object.values(data).reduce((a, b) => a + b, 0); let start = 0;
-    const gradients = keys.map((key) => { const percent = (data[key] / total) * 100; const color = colors[key] || '#9ca3af'; const str = `${color} ${start}% ${start + percent}%`; start += percent; return str; }).join(', ');
+    const fallbackColors = [theme.primary, theme.secondary, theme.accent, theme.highlight, '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+    
+    const gradients = keys.map((key, index) => { 
+        const percent = (data[key] / total) * 100; 
+        const color = colors && colors[key] ? colors[key] : fallbackColors[index % fallbackColors.length]; 
+        const str = `${color} ${start}% ${start + percent}%`; 
+        start += percent; 
+        return str; 
+    }).join(', ');
+    
     return (
         <div className="flex flex-col md:flex-row items-center gap-8">
             <div style={{ width: '220px', height: '220px', borderRadius: '50%', background: `conic-gradient(${gradients})`, boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }} className="flex-shrink-0 animate-scale-in" />
-            <div className="flex flex-col gap-2 w-full max-h-48 overflow-y-auto pr-2"> {keys.map(key => { const percent = Math.round((data[key] / total) * 100); return ( <div key={key} className="flex items-center justify-between p-2 rounded-lg" style={{ backgroundColor: theme.darkMode ? '#3a3a3a' : '#f9fafb' }}>
-                            <div className="flex items-center gap-2"> <div className="w-4 h-4 rounded-full" style={{ backgroundColor: colors[key] || '#9ca3af' }}></div> <span className="font-medium text-sm" style={{ color: theme.textPrimary }}>{key || 'Unspecified'}</span> </div>
+            <div className="flex flex-col gap-2 w-full max-h-48 overflow-y-auto pr-2"> {keys.map((key, index) => { 
+                    const percent = Math.round((data[key] / total) * 100); 
+                    const color = colors && colors[key] ? colors[key] : fallbackColors[index % fallbackColors.length];
+                    return ( 
+                        <div key={key} className="flex items-center justify-between p-2 rounded-lg" style={{ backgroundColor: theme.darkMode ? '#3a3a3a' : '#f9fafb' }}>
+                            <div className="flex items-center gap-2"> <div className="w-4 h-4 rounded-full" style={{ backgroundColor: color }}></div> <span className="font-medium text-sm" style={{ color: theme.textPrimary }}>{key || 'Unspecified'}</span> </div>
                             <div className="flex items-center gap-3"> <span className="text-sm font-bold" style={{ color: theme.textPrimary }}>{data[key]}</span> <span className="text-xs text-gray-500 w-8 text-right">{percent}%</span> </div>
-                        </div> ) }) } </div>
+                        </div> 
+                    ) 
+                }) } 
+            </div>
+        </div>
+    );
+};
+
+const SimpleLineChart = ({ data, theme }) => {
+    const entries = Object.entries(data);
+    if (entries.length === 0) return <div className="text-gray-500 italic p-4 text-center">No data available to chart</div>;
+    
+    const max = Math.max(...entries.map(e => e[1]), 1);
+    const padding = 30;
+    const width = Math.max(800, entries.length * 70); 
+    const height = 240;
+    
+    const points = entries.map((entry, index) => {
+        const x = padding + (index / Math.max(entries.length - 1, 1)) * (width - padding * 2);
+        const y = height - padding - ((entry[1] / max) * (height - padding * 2));
+        return `${x},${y}`;
+    }).join(' ');
+
+    return (
+        <div className="w-full overflow-x-auto hide-native-scroll relative">
+            <svg viewBox={`0 0 ${width} ${height}`} className="w-full" style={{ height: '240px', minWidth: '100%' }}>
+                <polyline fill="none" stroke={theme.primary} strokeWidth="4" points={points} strokeLinejoin="round" />
+                {entries.map((entry, index) => {
+                    const x = padding + (index / Math.max(entries.length - 1, 1)) * (width - padding * 2);
+                    const y = height - padding - ((entry[1] / max) * (height - padding * 2));
+                    return (
+                        <g key={index} className="group cursor-pointer">
+                            <circle cx={x} cy={y} r="5" fill={theme.cardBg} stroke={theme.primary} strokeWidth="3" className="transition-all duration-300 group-hover:r-7" />
+                            <text x={x} y={y - 15} textAnchor="middle" fill={theme.textPrimary} fontSize="12" fontWeight="bold" className="opacity-0 group-hover:opacity-100 transition-opacity">{entry[1]}</text>
+                            <text x={x} y={height - 5} textAnchor="middle" fill={theme.textSecondary} fontSize="11" className="opacity-70">{entry[0]}</text>
+                        </g>
+                    );
+                })}
+            </svg>
         </div>
     );
 };
@@ -130,7 +193,6 @@ try { firebase.initializeApp(firebaseConfig); database = firebase.database(); au
 
 const getTextColor = (bgColor) => { if(!bgColor) return '#ffffff'; const hex = bgColor.replace('#', ''); const r = parseInt(hex.substr(0, 2), 16); const g = parseInt(hex.substr(2, 2), 16); const b = parseInt(hex.substr(4, 2), 16); const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255; return luminance > 0.5 ? '#1f2937' : '#ffffff'; };
 
-// FULLY RESTORED DEFAULT THEMES
 const defaultThemes = { 
     'None': { name: 'None', background: '#ffffff', cardBg: '#ffffff', primary: '#A4243B', secondary: '#D8C99B', accent: '#D8973C', highlight: '#BD632F', dark: '#273E47', textPrimary: '#1f2937', textSecondary: '#6b7280' }, 
     'Cherry Blossom': { name: 'Cherry Blossom', background: '#FFF5F7', cardBg: '#ffffff', primary: '#A4243B', secondary: '#D8C99B', accent: '#D8973C', highlight: '#BD632F', dark: '#273E47', textPrimary: '#1f2937', textSecondary: '#6b7280' }, 
@@ -154,13 +216,15 @@ function App() {
   const [draggedTask, setDraggedTask] = useState(null); const [dragOverTask, setDragOverTask] = useState(null); const [deleteConfirm, setDeleteConfirm] = useState(null); const [draggedColumn, setDraggedColumn] = useState(null); const [dragOverColumn, setDragOverColumn] = useState(null); const [showSettings, setShowSettings] = useState(false); const [showAnalytics, setShowAnalytics] = useState(false); const [expandedDropdown, setExpandedDropdown] = useState(null); const [editingHeader, setEditingHeader] = useState(null); const [showCustomThemeCreator, setShowCustomThemeCreator] = useState(false);
   
   const [searchQuery, setSearchQuery] = useState('');
-  const [chartPresets, setChartPresets] = useState({ followUp: 'pie', branch: 'pie', opportunities: 'bar' });
+  
+  // ADDED NEW WIDGET PRESETS
+  const [chartPresets, setChartPresets] = useState({ followUp: 'pie', branch: 'pie', opportunities: 'bar', status: 'pie', education: 'pie', timeGroup: 'month' });
 
   const loadFromStorage = (key, defaultValue) => { try { const saved = localStorage.getItem(key); return saved ? JSON.parse(saved) : defaultValue; } catch (error) { return defaultValue; } };
   
-  const initialColumnsDef = { timestamp: { label: 'Timestamp', icon: 'Calendar' }, fullName: { label: 'Full Name', icon: 'User' }, followUpRequired: { label: 'Follow Up?', icon: 'none' }, phone: { label: 'Phone Number', icon: 'none' }, email: { label: 'Email Address', icon: 'none' }, currentStatus: { label: 'Current Status', icon: 'none' }, branchOfService: { label: 'Branch of Service', icon: 'none' }, agreeToContact: { label: 'Agree to Contact', icon: 'none' }, mos: { label: 'MOS / Job Specialty', icon: 'none' }, payGrade: { label: 'Pay Grade', icon: 'none' }, etsDate: { label: 'ETS / Retirement Date', icon: 'Calendar' }, terminalLeave: { label: 'Terminal Leave Date', icon: 'Calendar' }, location: { label: 'Location (City, State)', icon: 'none' }, transportation: { label: 'Reliable Transportation?', icon: 'none' }, opportunities: { label: 'Opportunities Interested In', icon: 'none' }, skills: { label: 'Skills/Experience', icon: 'none' }, areasOfInterest: { label: 'Areas of Interest', icon: 'none' }, availability: { label: 'Availability/Limitations', icon: 'none' }, pipelineStatus: { label: 'Pipeline Status', icon: 'none' }, drag: { label: '', icon: 'none' }, actions: { label: '', icon: 'none' } };
-  const initialWidths = { timestamp: 150, fullName: 200, followUpRequired: 130, phone: 150, email: 200, currentStatus: 180, branchOfService: 180, agreeToContact: 150, mos: 200, payGrade: 120, etsDate: 150, terminalLeave: 150, location: 180, transportation: 180, opportunities: 250, skills: 250, areasOfInterest: 250, availability: 250, pipelineStatus: 150, drag: 50, actions: 80 };
-  const defaultColumnOrder = [ 'drag', 'fullName', 'followUpRequired', 'branchOfService', 'email', 'phone', 'timestamp', 'agreeToContact', 'mos', 'payGrade', 'etsDate', 'terminalLeave', 'location', 'transportation', 'opportunities', 'skills', 'areasOfInterest', 'availability', 'currentStatus', 'actions' ];
+  const initialColumnsDef = { timestamp: { label: 'Timestamp', icon: 'Calendar' }, fullName: { label: 'Full Name', icon: 'User' }, followUpRequired: { label: 'Follow Up?', icon: 'none' }, phone: { label: 'Phone Number', icon: 'none' }, email: { label: 'Email Address', icon: 'none' }, currentStatus: { label: 'Current Status', icon: 'none' }, branchOfService: { label: 'Branch of Service', icon: 'none' }, agreeToContact: { label: 'Agree to Contact', icon: 'none' }, mos: { label: 'MOS / Job Specialty', icon: 'none' }, payGrade: { label: 'Pay Grade', icon: 'none' }, etsDate: { label: 'ETS / Retirement Date', icon: 'Calendar' }, terminalLeave: { label: 'Terminal Leave Date', icon: 'Calendar' }, location: { label: 'Location (City, State)', icon: 'none' }, transportation: { label: 'Reliable Transportation?', icon: 'none' }, opportunities: { label: 'Opportunities Interested In', icon: 'none' }, educationLevel: { label: 'Education Level', icon: 'none' }, tradeSchoolDetails: { label: 'Trade School Details', icon: 'none' }, skills: { label: 'Skills/Experience', icon: 'none' }, areasOfInterest: { label: 'Areas of Interest', icon: 'none' }, availability: { label: 'Availability/Limitations', icon: 'none' }, pipelineStatus: { label: 'Pipeline Status', icon: 'none' }, drag: { label: '', icon: 'none' }, actions: { label: '', icon: 'none' } };
+  const initialWidths = { timestamp: 150, fullName: 200, followUpRequired: 130, phone: 150, email: 200, currentStatus: 180, branchOfService: 180, agreeToContact: 150, mos: 200, payGrade: 120, etsDate: 150, terminalLeave: 150, location: 180, transportation: 180, opportunities: 250, educationLevel: 200, tradeSchoolDetails: 200, skills: 250, areasOfInterest: 250, availability: 250, pipelineStatus: 150, drag: 50, actions: 80 };
+  const defaultColumnOrder = [ 'drag', 'fullName', 'followUpRequired', 'branchOfService', 'email', 'phone', 'timestamp', 'agreeToContact', 'mos', 'payGrade', 'etsDate', 'terminalLeave', 'location', 'transportation', 'educationLevel', 'tradeSchoolDetails', 'opportunities', 'skills', 'areasOfInterest', 'availability', 'currentStatus', 'actions' ];
   
   const [columns, setColumns] = useState(() => loadFromStorage('comcam_columns_v6', initialColumnsDef)); const [tasks, setTasks] = useState(() => loadFromStorage('comcam_tasks', [])); const [columnWidths, setColumnWidths] = useState(() => loadFromStorage('comcam_columnWidths_v6', initialWidths)); const [columnOrder, setColumnOrder] = useState(() => loadFromStorage('comcam_columnOrder_v6', defaultColumnOrder)); const [expandedGroups, setExpandedGroups] = useState(() => loadFromStorage('comcam_expandedGroups', { group1: true, group2: true })); const [settings, setSettings] = useState(() => loadFromStorage('comcam_settings', { darkMode: false, useTheme: false, colorTheme: 'None' }));
   const [customThemes, setCustomThemes] = useState(() => loadFromStorage('comcam_customThemes', {}));
@@ -185,11 +249,9 @@ function App() {
     }
   };
 
-  // AI IMAGE COLOR EXTRACTION
   const handleImageThemeUpload = (e) => {
       const file = e.target.files[0];
       if (!file) return;
-      
       const reader = new FileReader();
       reader.onload = (event) => {
           const img = new window.Image();
@@ -197,13 +259,11 @@ function App() {
               try {
                   const colorThief = new ColorThief();
                   const dominant = colorThief.getColor(img);
-                  const palette = colorThief.getPalette(img, 5); // Grab 5 colors
-                  
+                  const palette = colorThief.getPalette(img, 5); 
                   const rgbToHex = (r, g, b) => '#' + [r, g, b].map(x => {
                       const hex = x.toString(16);
                       return hex.length === 1 ? '0' + hex : hex;
                   }).join('');
-
                   setCustomTheme({
                       ...customTheme,
                       primary: rgbToHex(dominant[0], dominant[1], dominant[2]),
@@ -219,7 +279,7 @@ function App() {
           img.src = event.target.result;
       };
       reader.readAsDataURL(file);
-      e.target.value = ''; // Reset input
+      e.target.value = ''; 
   };
 
   const totalTableWidth = columnOrder.reduce((acc, key) => acc + (columnWidths[key] || 150), 0);
@@ -470,7 +530,7 @@ function App() {
       
       {showAnalytics && ( 
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"> 
-            <div className="bg-white rounded-xl shadow-2xl p-8 max-w-6xl w-full max-h-[90vh] overflow-y-auto" style={{ backgroundColor: theme.cardBg || theme.background, fontFamily: '"Roboto", sans-serif' }}>
+            <div className="bg-white rounded-xl shadow-2xl p-8 max-w-[1400px] w-full max-h-[90vh] overflow-y-auto" style={{ backgroundColor: theme.cardBg || theme.background, fontFamily: '"Roboto", sans-serif' }}>
                 <div className="flex items-center justify-between mb-8 pb-4 border-b" style={{ borderColor: settings.darkMode ? '#4a4a4a' : '#e5e7eb' }}> 
                     <div> 
                         <h3 className="text-2xl font-bold" style={{ color: theme.textPrimary }}>Data Analytics</h3> 
@@ -478,7 +538,45 @@ function App() {
                     </div> 
                     <button onClick={() => setShowAnalytics(false)} className="text-gray-400 hover:text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-full p-2 transition-colors" style={{ backgroundColor: settings.darkMode ? '#3a3a3a' : '#f3f4f6' }}><X size={24} /></button> 
                 </div>
+                
                 <div className="flex flex-wrap justify-center gap-6">
+                    
+                    {/* NEW: VOLUME OVER TIME LINE GRAPH */}
+                    <div id="widget-timeline" className="rounded-xl border shadow-sm p-6 w-full" style={{ borderColor: settings.darkMode ? '#4a4a4a' : '#e5e7eb', backgroundColor: theme.background }}> 
+                        <div className="flex flex-wrap items-center justify-between mb-6">
+                            <h4 className="text-lg font-bold flex items-center gap-2" style={{ color: theme.textPrimary }}><LineChartIcon size={20} className="text-purple-500" /> Intake Volume Over Time</h4> 
+                            <div className="flex gap-2 items-center">
+                                <span className="text-sm font-medium" style={{ color: theme.textSecondary }}>Group By:</span>
+                                <select className="text-sm border rounded px-2 py-1 font-semibold cursor-pointer" style={{ backgroundColor: theme.cardBg, color: theme.textPrimary }} value={chartPresets.timeGroup} onChange={(e) => setChartPresets({...chartPresets, timeGroup: e.target.value})}> 
+                                    <option value="day">Day</option> 
+                                    <option value="month">Month</option> 
+                                    <option value="year">Year</option> 
+                                </select>
+                                <button onClick={() => handleExportPNG('widget-timeline', 'Timeline-Chart')} className="p-1 hover:bg-gray-200 rounded text-blue-500 ml-2" title="Export PNG"><Download size={16}/></button>
+                            </div>
+                        </div>
+                        {(() => { 
+                            const counts = {};
+                            tasks.forEach(t => {
+                                if (!t.timestamp) return;
+                                const d = new Date(t.timestamp);
+                                if (isNaN(d.getTime())) return;
+                                let sortKey = ''; let displayKey = '';
+                                
+                                if (chartPresets.timeGroup === 'day') { sortKey = d.toISOString().split('T')[0]; displayKey = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); }
+                                else if (chartPresets.timeGroup === 'month') { sortKey = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; displayKey = d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }); }
+                                else if (chartPresets.timeGroup === 'year') { sortKey = d.getFullYear().toString(); displayKey = d.getFullYear().toString(); }
+                                
+                                if(!counts[sortKey]) counts[sortKey] = { count: 0, label: displayKey };
+                                counts[sortKey].count += 1;
+                            });
+                            
+                            const sortedData = {};
+                            Object.keys(counts).sort().forEach(k => { sortedData[counts[k].label] = counts[k].count; });
+                            return <SimpleLineChart data={sortedData} theme={theme} />; 
+                        })()} 
+                    </div>
+
                     <div id="widget-followup" className="rounded-xl border shadow-sm p-6 flex-grow min-w-[320px] max-w-[500px]" style={{ borderColor: settings.darkMode ? '#4a4a4a' : '#e5e7eb', backgroundColor: theme.background }}> 
                         <div className="flex items-center justify-between mb-6">
                             <h4 className="text-lg font-bold flex items-center gap-2" style={{ color: theme.textPrimary }}><PieChartIcon size={20} className="text-orange-500" /> Follow Up Required</h4> 
@@ -489,6 +587,7 @@ function App() {
                         </div>
                         {(() => { const counts = tasks.reduce((acc, t) => { const s = t.followUpRequired || 'Pending'; acc[s] = (acc[s] || 0) + 1; return acc; }, {}); const chartColors = { 'Yes': theme.primary, 'No': theme.secondary, 'Pending': theme.accent }; return chartPresets.followUp === 'pie' ? <SimplePieChart data={counts} colors={chartColors} theme={theme} /> : <SimpleBarChart data={counts} theme={theme} />; })()} 
                     </div>
+                    
                     <div id="widget-branch" className="rounded-xl border shadow-sm p-6 flex-grow min-w-[320px] max-w-[500px]" style={{ borderColor: settings.darkMode ? '#4a4a4a' : '#e5e7eb', backgroundColor: theme.background }}> 
                         <div className="flex items-center justify-between mb-6">
                             <h4 className="text-lg font-bold flex items-center gap-2" style={{ color: theme.textPrimary }}><PieChartIcon size={20} className="text-blue-500" /> Branch of Service</h4> 
@@ -499,7 +598,32 @@ function App() {
                         </div>
                         {(() => { const counts = tasks.reduce((acc, t) => { const b = t.branchOfService || 'Unspecified'; acc[b] = (acc[b] || 0) + 1; return acc; }, {}); return chartPresets.branch === 'pie' ? <SimplePieChart data={counts} colors={branchColors} theme={theme} /> : <SimpleBarChart data={counts} theme={theme} />; })()} 
                     </div>
-                    <div id="widget-opps" className="rounded-xl border shadow-sm p-6 w-full max-w-[1024px]" style={{ borderColor: settings.darkMode ? '#4a4a4a' : '#e5e7eb', backgroundColor: theme.background }}> 
+
+                    {/* NEW: MILITARY STATUS WIDGET */}
+                    <div id="widget-status" className="rounded-xl border shadow-sm p-6 flex-grow min-w-[320px] max-w-[500px]" style={{ borderColor: settings.darkMode ? '#4a4a4a' : '#e5e7eb', backgroundColor: theme.background }}> 
+                        <div className="flex items-center justify-between mb-6">
+                            <h4 className="text-lg font-bold flex items-center gap-2" style={{ color: theme.textPrimary }}><PieChartIcon size={20} className="text-teal-500" /> Military Status</h4> 
+                            <div className="flex gap-2">
+                                <select className="text-xs border rounded p-1" style={{ backgroundColor: theme.cardBg, color: theme.textPrimary }} value={chartPresets.status} onChange={(e) => setChartPresets({...chartPresets, status: e.target.value})}> <option value="pie">Pie Chart</option> <option value="bar">Bar Chart</option> </select>
+                                <button onClick={() => handleExportPNG('widget-status', 'Status-Chart')} className="p-1 hover:bg-gray-200 rounded text-blue-500" title="Export PNG"><Download size={16}/></button>
+                            </div>
+                        </div>
+                        {(() => { const counts = tasks.reduce((acc, t) => { const b = t.currentStatus || 'Unspecified'; acc[b] = (acc[b] || 0) + 1; return acc; }, {}); return chartPresets.status === 'pie' ? <SimplePieChart data={counts} theme={theme} /> : <SimpleBarChart data={counts} theme={theme} />; })()} 
+                    </div>
+
+                    {/* NEW: EDUCATION LEVEL WIDGET */}
+                    <div id="widget-education" className="rounded-xl border shadow-sm p-6 flex-grow min-w-[320px] max-w-[500px]" style={{ borderColor: settings.darkMode ? '#4a4a4a' : '#e5e7eb', backgroundColor: theme.background }}> 
+                        <div className="flex items-center justify-between mb-6">
+                            <h4 className="text-lg font-bold flex items-center gap-2" style={{ color: theme.textPrimary }}><PieChartIcon size={20} className="text-red-400" /> Education Level</h4> 
+                            <div className="flex gap-2">
+                                <select className="text-xs border rounded p-1" style={{ backgroundColor: theme.cardBg, color: theme.textPrimary }} value={chartPresets.education} onChange={(e) => setChartPresets({...chartPresets, education: e.target.value})}> <option value="pie">Pie Chart</option> <option value="bar">Bar Chart</option> </select>
+                                <button onClick={() => handleExportPNG('widget-education', 'Education-Chart')} className="p-1 hover:bg-gray-200 rounded text-blue-500" title="Export PNG"><Download size={16}/></button>
+                            </div>
+                        </div>
+                        {(() => { const counts = tasks.reduce((acc, t) => { const b = t.educationLevel || 'Unspecified'; acc[b] = (acc[b] || 0) + 1; return acc; }, {}); return chartPresets.education === 'pie' ? <SimplePieChart data={counts} theme={theme} /> : <SimpleBarChart data={counts} theme={theme} />; })()} 
+                    </div>
+
+                    <div id="widget-opps" className="rounded-xl border shadow-sm p-6 w-full" style={{ borderColor: settings.darkMode ? '#4a4a4a' : '#e5e7eb', backgroundColor: theme.background }}> 
                         <div className="flex items-center justify-between mb-6">
                             <h4 className="text-lg font-bold flex items-center gap-2" style={{ color: theme.textPrimary }}><BarChartIcon size={20} className="text-green-500" /> Desired Opportunities</h4> 
                             <button onClick={() => handleExportPNG('widget-opps', 'Opportunities-Chart')} className="p-1 hover:bg-gray-200 rounded text-blue-500 flex items-center gap-1 text-xs"><Download size={14}/> Export PNG</button>

@@ -217,8 +217,9 @@ function App() {
   
   const [searchQuery, setSearchQuery] = useState('');
   
-  // ADDED NEW WIDGET PRESETS
+  // ADDED NEW WIDGET PRESETS AND DATE RANGE STATE
   const [chartPresets, setChartPresets] = useState({ followUp: 'pie', branch: 'pie', opportunities: 'bar', status: 'pie', education: 'pie', timeGroup: 'month' });
+  const [dateRange, setDateRange] = useState({ start: '', end: '' });
 
   const loadFromStorage = (key, defaultValue) => { try { const saved = localStorage.getItem(key); return saved ? JSON.parse(saved) : defaultValue; } catch (error) { return defaultValue; } };
   
@@ -545,13 +546,23 @@ function App() {
                     <div id="widget-timeline" className="rounded-xl border shadow-sm p-6 w-full" style={{ borderColor: settings.darkMode ? '#4a4a4a' : '#e5e7eb', backgroundColor: theme.background }}> 
                         <div className="flex flex-wrap items-center justify-between mb-6">
                             <h4 className="text-lg font-bold flex items-center gap-2" style={{ color: theme.textPrimary }}><LineChartIcon size={20} className="text-purple-500" /> Intake Volume Over Time</h4> 
-                            <div className="flex gap-2 items-center">
-                                <span className="text-sm font-medium" style={{ color: theme.textSecondary }}>Group By:</span>
+                            
+                            {/* NEW: DATE RANGE FILTERS & GROUPING OPTIONS */}
+                            <div className="flex gap-2 items-center flex-wrap mt-2 sm:mt-0">
+                                <span className="text-sm font-medium" style={{ color: theme.textSecondary }}>Filter:</span>
+                                <input type="date" className="text-sm border rounded px-2 py-1" style={{ backgroundColor: theme.cardBg, color: theme.textPrimary }} value={dateRange.start} onChange={e => setDateRange({...dateRange, start: e.target.value})} title="Start Date" />
+                                <span className="text-sm font-medium" style={{ color: theme.textSecondary }}>to</span>
+                                <input type="date" className="text-sm border rounded px-2 py-1" style={{ backgroundColor: theme.cardBg, color: theme.textPrimary }} value={dateRange.end} onChange={e => setDateRange({...dateRange, end: e.target.value})} title="End Date" />
+                                
+                                <span className="text-sm font-medium ml-2" style={{ color: theme.textSecondary }}>Group By:</span>
                                 <select className="text-sm border rounded px-2 py-1 font-semibold cursor-pointer" style={{ backgroundColor: theme.cardBg, color: theme.textPrimary }} value={chartPresets.timeGroup} onChange={(e) => setChartPresets({...chartPresets, timeGroup: e.target.value})}> 
                                     <option value="day">Day</option> 
+                                    <option value="week">Week</option>
                                     <option value="month">Month</option> 
+                                    <option value="quarter">Quarter</option>
                                     <option value="year">Year</option> 
                                 </select>
+                                <button onClick={() => {setDateRange({start:'', end:''})}} className="text-xs text-gray-500 hover:text-red-500 ml-1">Clear</button>
                                 <button onClick={() => handleExportPNG('widget-timeline', 'Timeline-Chart')} className="p-1 hover:bg-gray-200 rounded text-blue-500 ml-2" title="Export PNG"><Download size={16}/></button>
                             </div>
                         </div>
@@ -561,11 +572,38 @@ function App() {
                                 if (!t.timestamp) return;
                                 const d = new Date(t.timestamp);
                                 if (isNaN(d.getTime())) return;
+
+                                // Date Range Filter logic
+                                if (dateRange.start && d < new Date(dateRange.start + 'T00:00:00')) return;
+                                if (dateRange.end && d > new Date(dateRange.end + 'T23:59:59')) return;
+
                                 let sortKey = ''; let displayKey = '';
                                 
-                                if (chartPresets.timeGroup === 'day') { sortKey = d.toISOString().split('T')[0]; displayKey = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); }
-                                else if (chartPresets.timeGroup === 'month') { sortKey = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; displayKey = d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }); }
-                                else if (chartPresets.timeGroup === 'year') { sortKey = d.getFullYear().toString(); displayKey = d.getFullYear().toString(); }
+                                if (chartPresets.timeGroup === 'day') { 
+                                    sortKey = d.toISOString().split('T')[0]; 
+                                    displayKey = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); 
+                                }
+                                else if (chartPresets.timeGroup === 'week') {
+                                    const day = d.getDay() || 7;
+                                    const monday = new Date(d);
+                                    monday.setHours(0, 0, 0, 0);
+                                    monday.setDate(d.getDate() - day + 1);
+                                    sortKey = monday.toISOString().split('T')[0];
+                                    displayKey = 'Wk of ' + monday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                                }
+                                else if (chartPresets.timeGroup === 'month') { 
+                                    sortKey = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; 
+                                    displayKey = d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }); 
+                                }
+                                else if (chartPresets.timeGroup === 'quarter') {
+                                    const q = Math.floor(d.getMonth() / 3) + 1;
+                                    sortKey = `${d.getFullYear()}-Q${q}`;
+                                    displayKey = `Q${q} ${d.getFullYear()}`;
+                                }
+                                else if (chartPresets.timeGroup === 'year') { 
+                                    sortKey = d.getFullYear().toString(); 
+                                    displayKey = d.getFullYear().toString(); 
+                                }
                                 
                                 if(!counts[sortKey]) counts[sortKey] = { count: 0, label: displayKey };
                                 counts[sortKey].count += 1;
@@ -599,7 +637,6 @@ function App() {
                         {(() => { const counts = tasks.reduce((acc, t) => { const b = t.branchOfService || 'Unspecified'; acc[b] = (acc[b] || 0) + 1; return acc; }, {}); return chartPresets.branch === 'pie' ? <SimplePieChart data={counts} colors={branchColors} theme={theme} /> : <SimpleBarChart data={counts} theme={theme} />; })()} 
                     </div>
 
-                    {/* NEW: MILITARY STATUS WIDGET */}
                     <div id="widget-status" className="rounded-xl border shadow-sm p-6 flex-grow min-w-[320px] max-w-[500px]" style={{ borderColor: settings.darkMode ? '#4a4a4a' : '#e5e7eb', backgroundColor: theme.background }}> 
                         <div className="flex items-center justify-between mb-6">
                             <h4 className="text-lg font-bold flex items-center gap-2" style={{ color: theme.textPrimary }}><PieChartIcon size={20} className="text-teal-500" /> Military Status</h4> 
@@ -611,7 +648,6 @@ function App() {
                         {(() => { const counts = tasks.reduce((acc, t) => { const b = t.currentStatus || 'Unspecified'; acc[b] = (acc[b] || 0) + 1; return acc; }, {}); return chartPresets.status === 'pie' ? <SimplePieChart data={counts} theme={theme} /> : <SimpleBarChart data={counts} theme={theme} />; })()} 
                     </div>
 
-                    {/* NEW: EDUCATION LEVEL WIDGET */}
                     <div id="widget-education" className="rounded-xl border shadow-sm p-6 flex-grow min-w-[320px] max-w-[500px]" style={{ borderColor: settings.darkMode ? '#4a4a4a' : '#e5e7eb', backgroundColor: theme.background }}> 
                         <div className="flex items-center justify-between mb-6">
                             <h4 className="text-lg font-bold flex items-center gap-2" style={{ color: theme.textPrimary }}><PieChartIcon size={20} className="text-red-400" /> Education Level</h4> 

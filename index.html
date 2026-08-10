@@ -81,11 +81,11 @@ const InlineCalendar = ({ value, onChange, darkMode, onToggle, isExpanded, textS
   const pyClass = textSize === 'text-base' || textSize === 'text-lg' ? 'py-3' : 'py-2';
   return (
     <div className="w-full relative">
-      <button type="button" onClick={onToggle} className={`border rounded px-3 ${pyClass} hover:border-blue-400 focus:outline-none focus:border-blue-500 w-full text-left flex items-center justify-between`} style={{ borderColor: isExpanded ? '#3b82f6' : (darkMode ? '#4a4a4a' : '#e5e7eb'), backgroundColor: darkMode ? '#3a3a3a' : '#ffffff', color: darkMode ? '#ffffff' : '#000000', minHeight: '38px', boxShadow: isExpanded ? '0 0 0 3px rgba(59, 130, 246, 0.2)' : 'none', transition: 'all .2s ease' }}>
+      <button type="button" onClick={onToggle} className={`border rounded-xl px-4 ${pyClass} hover:border-blue-400 focus:outline-none focus:border-blue-500 w-full text-left flex items-center justify-between`} style={{ borderColor: isExpanded ? '#3b82f6' : (darkMode ? '#4a4a4a' : '#e5e7eb'), backgroundColor: darkMode ? '#3a3a3a' : '#ffffff', color: darkMode ? '#ffffff' : '#000000', minHeight: '38px', boxShadow: isExpanded ? '0 0 0 3px rgba(59, 130, 246, 0.2)' : 'none', transition: 'all .2s ease' }}>
         <span className={`font-semibold tracking-wide ${textSize}`}>{formatDisplayDate(value)}</span><div className="chevron-rotate" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}><ChevronDown /></div>
       </button>
       {isExpanded && (
-        <div className="mt-1 rounded-lg shadow-xl border-2 z-[60] absolute left-0 top-full" style={{ backgroundColor: darkMode ? '#2a2a2a' : '#ffffff', borderColor: '#3b82f6', padding: '16px', width: '360px', animation: 'slideDown 2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards' }}>
+        <div className="mt-1 rounded-xl shadow-xl border-2 z-[60] absolute left-0 top-full" style={{ backgroundColor: darkMode ? '#2a2a2a' : '#ffffff', borderColor: '#3b82f6', padding: '16px', width: '360px', animation: 'slideDown 2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards' }}>
           <div className="flex items-center justify-between mb-4">
             <button type="button" onClick={() => changeMonth(-1)} className="p-2 rounded-lg hover:scale-110 transition-transform font-bold text-xl" style={{ backgroundColor: darkMode ? '#3a3a3a' : '#f3f4f6', color: darkMode ? '#ffffff' : '#000000' }}>&lt;</button>
             <span className="font-bold text-lg" style={{ color: darkMode ? '#ffffff' : '#000000' }}>{monthName}</span>
@@ -103,7 +103,6 @@ const SimpleBarChart = ({ data, theme }) => {
     const keys = Object.keys(data); if (keys.length === 0) return <div className="text-gray-500 italic p-4 text-center">No data available to chart</div>;
     const max = Math.max(...Object.values(data), 1);
     
-    // Dynamic multi-color palette for bar charts
     const chartColors = [theme.primary, theme.secondary, theme.accent, theme.highlight, '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
     
     return (
@@ -157,29 +156,56 @@ const SimpleLineChart = ({ data, theme }) => {
     const entries = Object.entries(data);
     if (entries.length === 0) return <div className="text-gray-500 italic p-4 text-center">No data available to chart</div>;
     
-    const max = Math.max(...entries.map(e => e[1]), 1);
-    const padding = 30;
-    const width = Math.max(800, entries.length * 70); 
-    const height = 240;
+    const maxVal = Math.max(...entries.map(e => e[1]), 1);
+    const yMax = Math.ceil(maxVal * 1.1); // Dynamic scaling + 10% buffer
     
+    const paddingLeft = 40;
+    const paddingRight = 30;
+    const paddingTop = 30;
+    const paddingBottom = 40;
+    const minWidth = 800;
+    const calculatedWidth = entries.length * 80 + paddingLeft + paddingRight;
+    const width = Math.max(minWidth, calculatedWidth); 
+    const height = 300;
+    
+    const graphWidth = width - paddingLeft - paddingRight;
+    const graphHeight = height - paddingTop - paddingBottom;
+    
+    const getX = (index, length) => {
+        if (length === 1) return paddingLeft + graphWidth / 2;
+        return paddingLeft + (index / (length - 1)) * graphWidth;
+    };
+
     const points = entries.map((entry, index) => {
-        const x = padding + (index / Math.max(entries.length - 1, 1)) * (width - padding * 2);
-        const y = height - padding - ((entry[1] / max) * (height - padding * 2));
+        const x = getX(index, entries.length);
+        const y = paddingTop + graphHeight - ((entry[1] / yMax) * graphHeight);
         return `${x},${y}`;
     }).join(' ');
 
+    const gridLines = [0, 0.25, 0.5, 0.75, 1].map(pct => {
+        const y = paddingTop + graphHeight - (pct * graphHeight);
+        const val = Math.round(pct * yMax);
+        return (
+            <g key={pct}>
+                <line x1={paddingLeft} y1={y} x2={width - paddingRight} y2={y} stroke={theme.darkMode ? '#4a4a4a' : '#e5e7eb'} strokeWidth="1" strokeDasharray={pct === 0 ? "0" : "4 4"} />
+                <text x={paddingLeft - 10} y={y + 4} textAnchor="end" fill={theme.textSecondary} fontSize="12">{val}</text>
+            </g>
+        );
+    });
+
     return (
-        <div className="w-full overflow-x-auto hide-native-scroll relative">
-            <svg viewBox={`0 0 ${width} ${height}`} className="w-full" style={{ height: '240px', minWidth: '100%' }}>
+        <div className="w-full overflow-x-auto hide-native-scroll relative pt-4">
+            <svg viewBox={`0 0 ${width} ${height}`} className="w-full" style={{ height: '300px', minWidth: '100%' }}>
+                {gridLines}
                 <polyline fill="none" stroke={theme.primary} strokeWidth="4" points={points} strokeLinejoin="round" />
                 {entries.map((entry, index) => {
-                    const x = padding + (index / Math.max(entries.length - 1, 1)) * (width - padding * 2);
-                    const y = height - padding - ((entry[1] / max) * (height - padding * 2));
+                    const x = getX(index, entries.length);
+                    const y = paddingTop + graphHeight - ((entry[1] / yMax) * graphHeight);
                     return (
                         <g key={index} className="group cursor-pointer">
-                            <circle cx={x} cy={y} r="5" fill={theme.cardBg} stroke={theme.primary} strokeWidth="3" className="transition-all duration-300 group-hover:r-7" />
-                            <text x={x} y={y - 15} textAnchor="middle" fill={theme.textPrimary} fontSize="12" fontWeight="bold" className="opacity-0 group-hover:opacity-100 transition-opacity">{entry[1]}</text>
-                            <text x={x} y={height - 5} textAnchor="middle" fill={theme.textSecondary} fontSize="11" className="opacity-70">{entry[0]}</text>
+                            <circle cx={x} cy={y} r="6" fill={theme.cardBg} stroke={theme.primary} strokeWidth="3" className="transition-all duration-300 group-hover:r-8" />
+                            <text x={x} y={y - 15} textAnchor="middle" fill={theme.textPrimary} fontSize="14" fontWeight="bold" className="opacity-0 group-hover:opacity-100 transition-opacity">{entry[1]}</text>
+                            <text x={x} y={height - 10} textAnchor="middle" fill={theme.textSecondary} fontSize="12" className="opacity-80">{entry[0]}</text>
                         </g>
                     );
                 })}
@@ -218,7 +244,6 @@ function App() {
   
   const [searchQuery, setSearchQuery] = useState('');
   
-  // ADDED NEW WIDGET PRESETS AND DATE RANGE/FILTER STATE
   const [chartPresets, setChartPresets] = useState({ followUp: 'pie', branch: 'pie', opportunities: 'bar', status: 'pie', education: 'pie', timeGroup: 'month', filterCol: '', filterVal: '' });
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
 
@@ -543,7 +568,7 @@ function App() {
                 
                 <div className="flex flex-wrap justify-center gap-6">
                     
-                    {/* NEW: VOLUME OVER TIME LINE GRAPH */}
+                    {/* ENHANCED: VOLUME OVER TIME LINE GRAPH */}
                     <div id="widget-timeline" className="rounded-xl border shadow-sm p-6 w-full" style={{ borderColor: settings.darkMode ? '#4a4a4a' : '#e5e7eb', backgroundColor: theme.background }}> 
                         <div className="flex flex-wrap items-center justify-between mb-6">
                             <h4 className="text-lg font-bold flex items-center gap-2" style={{ color: theme.textPrimary }}><LineChartIcon size={20} className="text-purple-500" /> Intake Volume Over Time</h4> 
@@ -575,25 +600,32 @@ function App() {
                                 </div>
                                 
                                 <span className="text-sm font-medium ml-4 mr-1" style={{ color: theme.textSecondary }}>Category:</span>
-                                <select className="text-base border rounded px-3 py-2 font-semibold cursor-pointer" style={{ backgroundColor: theme.cardBg, color: theme.textPrimary }} value={chartPresets.filterCol} onChange={(e) => setChartPresets({...chartPresets, filterCol: e.target.value, filterVal: ''})}>
+                                <select className="text-base border rounded-xl px-4 py-3 font-semibold cursor-pointer" style={{ backgroundColor: theme.cardBg, color: theme.textPrimary }} value={chartPresets.filterCol} onChange={(e) => setChartPresets({...chartPresets, filterCol: e.target.value, filterVal: ''})}>
                                     <option value="">All Applicants</option>
                                     <option value="branchOfService">Branch of Service</option>
                                     <option value="currentStatus">Military Status</option>
-                                    <option value="educationLevel">Education Level</option>
                                     <option value="followUpRequired">Follow Up</option>
                                 </select>
 
                                 {chartPresets.filterCol && (
-                                    <select className="text-base border rounded px-3 py-2 font-semibold cursor-pointer ml-2" style={{ backgroundColor: theme.cardBg, color: theme.textPrimary }} value={chartPresets.filterVal} onChange={(e) => setChartPresets({...chartPresets, filterVal: e.target.value})}>
+                                    <select className="text-base border rounded-xl px-4 py-3 font-semibold cursor-pointer ml-2" style={{ backgroundColor: theme.cardBg, color: theme.textPrimary }} value={chartPresets.filterVal} onChange={(e) => setChartPresets({...chartPresets, filterVal: e.target.value})}>
                                         <option value="">Select Value...</option>
-                                        {Array.from(new Set(tasks.map(t => t[chartPresets.filterCol]).filter(Boolean))).map(val => (
-                                            <option key={val} value={val}>{val}</option>
-                                        ))}
+                                        {(() => {
+                                            const predefinedOptions = {
+                                                branchOfService: ['Army', 'Navy', 'Air Force', 'Marines', 'Coast Guard', 'Space Force', 'Not started'],
+                                                currentStatus: ['Active Duty', 'Transitioning Service Member', 'Veteran', 'Military Spouse'],
+                                                followUpRequired: ['Yes', 'No', 'Pending']
+                                            };
+                                            const options = predefinedOptions[chartPresets.filterCol] || Array.from(new Set(tasks.map(t => t[chartPresets.filterCol]).filter(Boolean)));
+                                            return options.map(val => (
+                                                <option key={val} value={val}>{val}</option>
+                                            ));
+                                        })()}
                                     </select>
                                 )}
                                 
                                 <span className="text-sm font-medium ml-4 mr-1" style={{ color: theme.textSecondary }}>Group:</span>
-                                <select className="text-base border rounded px-3 py-2 font-semibold cursor-pointer" style={{ backgroundColor: theme.cardBg, color: theme.textPrimary }} value={chartPresets.timeGroup} onChange={(e) => setChartPresets({...chartPresets, timeGroup: e.target.value})}> 
+                                <select className="text-base border rounded-xl px-4 py-3 font-semibold cursor-pointer" style={{ backgroundColor: theme.cardBg, color: theme.textPrimary }} value={chartPresets.timeGroup} onChange={(e) => setChartPresets({...chartPresets, timeGroup: e.target.value})}> 
                                     <option value="day">Day</option> 
                                     <option value="week">Week</option>
                                     <option value="month">Month</option> 
@@ -602,7 +634,7 @@ function App() {
                                 </select>
 
                                 <button onClick={() => {setDateRange({start:'', end:''}); setChartPresets({...chartPresets, filterCol: '', filterVal: ''});}} className="text-sm font-bold text-gray-500 hover:text-red-500 ml-3 transition-colors">Clear</button>
-                                <button onClick={() => handleExportPNG('widget-timeline', 'Timeline-Chart')} className="p-2 hover:bg-gray-200 rounded text-blue-500 ml-2 transition-colors" title="Export PNG"><Download size={20}/></button>
+                                <button onClick={() => handleExportPNG('widget-timeline', 'Timeline-Chart')} className="p-3 hover:bg-gray-200 rounded-xl text-blue-500 ml-2 transition-colors" title="Export PNG"><Download size={24}/></button>
                             </div>
                         </div>
                         {(() => { 
@@ -664,8 +696,8 @@ function App() {
                         <div className="flex items-center justify-between mb-6">
                             <h4 className="text-lg font-bold flex items-center gap-2" style={{ color: theme.textPrimary }}><PieChartIcon size={20} className="text-orange-500" /> Follow Up Required</h4> 
                             <div className="flex gap-2">
-                                <select className="text-xs border rounded p-1" style={{ backgroundColor: theme.cardBg, color: theme.textPrimary }} value={chartPresets.followUp} onChange={(e) => setChartPresets({...chartPresets, followUp: e.target.value})}> <option value="pie">Pie Chart</option> <option value="bar">Bar Chart</option> </select>
-                                <button onClick={() => handleExportPNG('widget-followup', 'FollowUp-Chart')} className="p-1 hover:bg-gray-200 rounded text-blue-500" title="Export PNG"><Download size={16}/></button>
+                                <select className="text-base border rounded-xl px-4 py-3 font-semibold" style={{ backgroundColor: theme.cardBg, color: theme.textPrimary }} value={chartPresets.followUp} onChange={(e) => setChartPresets({...chartPresets, followUp: e.target.value})}> <option value="pie">Pie Chart</option> <option value="bar">Bar Chart</option> </select>
+                                <button onClick={() => handleExportPNG('widget-followup', 'FollowUp-Chart')} className="p-3 hover:bg-gray-200 rounded-xl text-blue-500 transition-colors" title="Export PNG"><Download size={24}/></button>
                             </div>
                         </div>
                         {(() => { const counts = tasks.reduce((acc, t) => { const s = t.followUpRequired || 'Pending'; acc[s] = (acc[s] || 0) + 1; return acc; }, {}); const chartColors = { 'Yes': theme.primary, 'No': theme.secondary, 'Pending': theme.accent }; return chartPresets.followUp === 'pie' ? <SimplePieChart data={counts} colors={chartColors} theme={theme} /> : <SimpleBarChart data={counts} theme={theme} />; })()} 
@@ -675,8 +707,8 @@ function App() {
                         <div className="flex items-center justify-between mb-6">
                             <h4 className="text-lg font-bold flex items-center gap-2" style={{ color: theme.textPrimary }}><PieChartIcon size={20} className="text-blue-500" /> Branch of Service</h4> 
                             <div className="flex gap-2">
-                                <select className="text-xs border rounded p-1" style={{ backgroundColor: theme.cardBg, color: theme.textPrimary }} value={chartPresets.branch} onChange={(e) => setChartPresets({...chartPresets, branch: e.target.value})}> <option value="pie">Pie Chart</option> <option value="bar">Bar Chart</option> </select>
-                                <button onClick={() => handleExportPNG('widget-branch', 'Branch-Chart')} className="p-1 hover:bg-gray-200 rounded text-blue-500" title="Export PNG"><Download size={16}/></button>
+                                <select className="text-base border rounded-xl px-4 py-3 font-semibold" style={{ backgroundColor: theme.cardBg, color: theme.textPrimary }} value={chartPresets.branch} onChange={(e) => setChartPresets({...chartPresets, branch: e.target.value})}> <option value="pie">Pie Chart</option> <option value="bar">Bar Chart</option> </select>
+                                <button onClick={() => handleExportPNG('widget-branch', 'Branch-Chart')} className="p-3 hover:bg-gray-200 rounded-xl text-blue-500 transition-colors" title="Export PNG"><Download size={24}/></button>
                             </div>
                         </div>
                         {(() => { const counts = tasks.reduce((acc, t) => { const b = t.branchOfService || 'Unspecified'; acc[b] = (acc[b] || 0) + 1; return acc; }, {}); return chartPresets.branch === 'pie' ? <SimplePieChart data={counts} colors={branchColors} theme={theme} /> : <SimpleBarChart data={counts} theme={theme} />; })()} 
@@ -686,8 +718,8 @@ function App() {
                         <div className="flex items-center justify-between mb-6">
                             <h4 className="text-lg font-bold flex items-center gap-2" style={{ color: theme.textPrimary }}><PieChartIcon size={20} className="text-teal-500" /> Military Status</h4> 
                             <div className="flex gap-2">
-                                <select className="text-xs border rounded p-1" style={{ backgroundColor: theme.cardBg, color: theme.textPrimary }} value={chartPresets.status} onChange={(e) => setChartPresets({...chartPresets, status: e.target.value})}> <option value="pie">Pie Chart</option> <option value="bar">Bar Chart</option> </select>
-                                <button onClick={() => handleExportPNG('widget-status', 'Status-Chart')} className="p-1 hover:bg-gray-200 rounded text-blue-500" title="Export PNG"><Download size={16}/></button>
+                                <select className="text-base border rounded-xl px-4 py-3 font-semibold" style={{ backgroundColor: theme.cardBg, color: theme.textPrimary }} value={chartPresets.status} onChange={(e) => setChartPresets({...chartPresets, status: e.target.value})}> <option value="pie">Pie Chart</option> <option value="bar">Bar Chart</option> </select>
+                                <button onClick={() => handleExportPNG('widget-status', 'Status-Chart')} className="p-3 hover:bg-gray-200 rounded-xl text-blue-500 transition-colors" title="Export PNG"><Download size={24}/></button>
                             </div>
                         </div>
                         {(() => { const counts = tasks.reduce((acc, t) => { const b = t.currentStatus || 'Unspecified'; acc[b] = (acc[b] || 0) + 1; return acc; }, {}); return chartPresets.status === 'pie' ? <SimplePieChart data={counts} theme={theme} /> : <SimpleBarChart data={counts} theme={theme} />; })()} 
@@ -697,8 +729,8 @@ function App() {
                         <div className="flex items-center justify-between mb-6">
                             <h4 className="text-lg font-bold flex items-center gap-2" style={{ color: theme.textPrimary }}><PieChartIcon size={20} className="text-red-400" /> Education Level</h4> 
                             <div className="flex gap-2">
-                                <select className="text-xs border rounded p-1" style={{ backgroundColor: theme.cardBg, color: theme.textPrimary }} value={chartPresets.education} onChange={(e) => setChartPresets({...chartPresets, education: e.target.value})}> <option value="pie">Pie Chart</option> <option value="bar">Bar Chart</option> </select>
-                                <button onClick={() => handleExportPNG('widget-education', 'Education-Chart')} className="p-1 hover:bg-gray-200 rounded text-blue-500" title="Export PNG"><Download size={16}/></button>
+                                <select className="text-base border rounded-xl px-4 py-3 font-semibold" style={{ backgroundColor: theme.cardBg, color: theme.textPrimary }} value={chartPresets.education} onChange={(e) => setChartPresets({...chartPresets, education: e.target.value})}> <option value="pie">Pie Chart</option> <option value="bar">Bar Chart</option> </select>
+                                <button onClick={() => handleExportPNG('widget-education', 'Education-Chart')} className="p-3 hover:bg-gray-200 rounded-xl text-blue-500 transition-colors" title="Export PNG"><Download size={24}/></button>
                             </div>
                         </div>
                         {(() => { const counts = tasks.reduce((acc, t) => { const b = t.educationLevel || 'Unspecified'; acc[b] = (acc[b] || 0) + 1; return acc; }, {}); return chartPresets.education === 'pie' ? <SimplePieChart data={counts} theme={theme} /> : <SimpleBarChart data={counts} theme={theme} />; })()} 
@@ -707,7 +739,7 @@ function App() {
                     <div id="widget-opps" className="rounded-xl border shadow-sm p-6 w-full" style={{ borderColor: settings.darkMode ? '#4a4a4a' : '#e5e7eb', backgroundColor: theme.background }}> 
                         <div className="flex items-center justify-between mb-6">
                             <h4 className="text-lg font-bold flex items-center gap-2" style={{ color: theme.textPrimary }}><BarChartIcon size={20} className="text-green-500" /> Desired Opportunities</h4> 
-                            <button onClick={() => handleExportPNG('widget-opps', 'Opportunities-Chart')} className="p-1 hover:bg-gray-200 rounded text-blue-500 flex items-center gap-1 text-xs"><Download size={14}/> Export PNG</button>
+                            <button onClick={() => handleExportPNG('widget-opps', 'Opportunities-Chart')} className="p-3 hover:bg-gray-200 rounded-xl text-blue-500 flex items-center gap-2 text-sm font-bold transition-colors"><Download size={24}/> Export PNG</button>
                         </div>
                         {(() => { const counts = {}; tasks.forEach(t => { if (!t.opportunities) return; t.opportunities.split(',').forEach(opp => { let o = opp.trim(); if(!o) return; if(o.length > 25) o = o.substring(0, 25) + '...'; counts[o] = (counts[o] || 0) + 1; }); }); return <SimpleBarChart data={counts} theme={theme} />; })()} 
                     </div>

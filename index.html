@@ -6,7 +6,7 @@
 <title>IMPACT Intake Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Kanit:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Nexa:wght@300;900&display=swap" rel="stylesheet">
 <!-- Roboto Font for Analytics -->
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
@@ -295,7 +295,7 @@ function App() {
                       ...customTheme,
                       primary: rgbToHex(dominant[0], dominant[1], dominant[2]),
                       secondary: palette[1] ? rgbToHex(palette[1][0], palette[1][1], palette[1][2]) : customTheme.secondary,
-                      accent: palette[2] ? rgbToHex(palette[2][0], palette[2][1], palette[2][2]) : customTheme.accent,
+                      accent: palette[2] ? rgbToHex(palette[2][0], palette[2][1], palette[2][2]) : customTheme.highlight,
                       highlight: palette[3] ? rgbToHex(palette[3][0], palette[3][1], palette[3][2]) : customTheme.highlight,
                   });
               } catch (err) {
@@ -445,7 +445,7 @@ function App() {
   
   const groups = { group1: { title: 'INBOX', bgColor: theme.accent }, group2: { title: 'Follow Up', bgColor: theme.highlight } }; 
   if (loading) return <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#1f2937' }}><div className="text-white text-lg animate-pulse">Loading...</div></div>;
-  if (!user) return ( <div className="min-h-screen flex items-center justify-center p-6 bg-gray-900"> <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8"> <div className="text-center mb-8"><Lock size={40} className="mx-auto text-blue-500 mb-4" /><h1 className="text-3xl font-bold text-gray-900" style={{ fontFamily: '"Gotham", "Montserrat", sans-serif' }}>IMPACT Impact Dashboard</h1></div> <form onSubmit={handleLogin} className="space-y-4"> <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="your@email.com" required /> <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="........" required /> {authError && <div className="bg-red-50 text-red-700 px-4 py-3 rounded-lg text-sm">{authError}</div>} <button type="submit" className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg">Sign In</button> </form> </div> </div> );
+  if (!user) return ( <div className="min-h-screen flex items-center justify-center p-6 bg-gray-900"> <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8"> <div className="text-center mb-8"><Lock size={40} className="mx-auto text-blue-500 mb-4" /><h1 className="text-3xl font-bold text-gray-900" style={{ fontFamily: '"Nexa", sans-serif' }}>IMPACT Impact Dashboard</h1></div> <form onSubmit={handleLogin} className="space-y-4"> <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="your@email.com" required /> <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="........" required /> {authError && <div className="bg-red-50 text-red-700 px-4 py-3 rounded-lg text-sm">{authError}</div>} <button type="submit" className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg">Sign In</button> </form> </div> </div> );
   
   return (
     <div className={`h-screen flex flex-col p-4 ${resizingColumn ? 'cursor-col-resize' : ''}`} style={{ backgroundColor: theme.background }}>
@@ -453,7 +453,7 @@ function App() {
       <div className="flex-shrink-0 z-40 rounded-xl shadow-lg p-4 mb-4" style={{ backgroundColor: theme.cardBg || theme.background }}>
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-end gap-3">
-            <h1 className="text-4xl font-extrabold tracking-tight" style={{ color: theme.textPrimary, fontFamily: '"Gotham", "Montserrat", sans-serif' }}>IMPACT Intake Dashboard</h1>
+            <h1 className="text-4xl font-extrabold tracking-tight" style={{ color: theme.textPrimary, fontFamily: '"Nexa", sans-serif' }}>IMPACT Intake Dashboard</h1>
             <div className="flex flex-col pb-1">
                 <span className="text-sm font-medium text-gray-500">v6.0</span>
                 <div className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: theme.textSecondary }}>
@@ -477,13 +477,13 @@ function App() {
         
         {/* CUSTOM STUDIO FADER */}
         <div className="flex-shrink-0 z-30 w-full px-8 py-6 border-b relative" style={{ borderColor: settings.darkMode ? '#4a4a4a' : '#e5e7eb', backgroundColor: theme.background }}>
-            <div ref={faderTrackRef} onMouseDown={handleFaderInteraction} className="w-full relative rounded-full shadow-inner cursor-pointer" style={{ height: '14px', backgroundColor: settings.darkMode ? '#374151' : '#e2e8f0' }}>
+            <div ref={faderTrackRef} onMouseDown={handleFaderInteraction} className="w-full relative rounded-full shadow-inner cursor-pointer" style={{ height: '14px', backgroundColor: '#3c3c3c' }}>
                 {(() => {
                     const thumbW = Math.max(5, faderState.widthRatio * 100); 
                     return (
                         <div 
                             className="absolute top-1/2 -translate-y-1/2 rounded-xl shadow-lg transition-colors flex items-center justify-center border-2"
-                            style={{ height: '40px', width: `${thumbW}%`, left: `calc(${faderState.percent * 100}% - (${faderState.percent} * ${thumbW}%))`, backgroundColor: settings.darkMode ? '#4b5563' : '#64748b', borderColor: settings.darkMode ? '#1f2937' : '#94a3b8', cursor: 'grab' }}
+                            style={{ height: '40px', width: `${thumbW}%`, left: `calc(${faderState.percent * 100}% - (${faderState.percent} * ${thumbW}%))`, backgroundColor: '#f7b512', borderColor: '#f7b512', cursor: 'grab' }}
                         >
                             <div className="flex gap-1 opacity-60">
                                 <div className="w-0.5 h-6 bg-white rounded-full"></div>

@@ -33,13 +33,17 @@ tbody tr td > div { color: inherit; }
 tbody tr.calendar-expanded { background: linear-gradient(to right, rgba(59, 130, 246, 0.08), rgba(59, 130, 246, 0.04)) !important; box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.3); }
 tbody tr.calendar-expanded td { padding-top: 2rem !important; padding-bottom: 2rem !important; vertical-align: top !important; transition: padding 2s cubic-bezier(0.34, 1.56, 0.64, 1); }
 tbody tr.calendar-expanded td > div { width: 100%; }
-.chevron-rotate { transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
 .hide-native-scroll::-webkit-scrollbar { height: 0px; width: 0px; }
 .hide-native-scroll { scrollbar-width: none; }
 
-/* Unified Dropdown Animations */
+/* Restoring the Magic 2-second bounce - Disabled when dragging */
+tbody.idle-table tr { 
+    transition: all 2s cubic-bezier(0.34, 1.56, 0.64, 1); 
+}
+
+/* Unified Dropdown Animations with 2-second ramping finesse */
 .dropdown-menu {
-    transition: all 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+    transition: all 2s cubic-bezier(0.34, 1.56, 0.64, 1);
     transform-origin: top center;
 }
 .dropdown-open {
@@ -52,6 +56,10 @@ tbody tr.calendar-expanded td > div { width: 100%; }
     visibility: hidden;
     transform: scaleY(0.9) translateY(-10px);
     pointer-events: none;
+}
+
+.chevron-rotate { 
+    transition: transform 2s cubic-bezier(0.34, 1.56, 0.64, 1); 
 }
 </style>
 </head>
@@ -523,11 +531,19 @@ function App() {
                                                 ))} 
                                             </tr> 
                                         </thead>
-                                        <tbody> 
+                                        <tbody className={draggedTask ? 'dragging-active' : 'idle-table'}> 
                                             {groupTasks.map((task, index) => { 
                                                 const currentRowBg = index % 2 === 0 ? (settings.darkMode ? '#3a3a3a' : theme.cardBg || theme.background) : (settings.darkMode ? '#2e2e2e' : theme.accent + '30'); 
                                                 return ( 
-                                                    <tr key={task.id} draggable="true" onDragStart={(e) => handleDragStart(e, task)} onDragEnd={handleDragEnd} onDragOver={(e) => handleDragOver(e, task)} onDragLeave={handleDragLeave} onDrop={(e) => handleDrop(e, task)} style={{ backgroundColor: currentRowBg, color: getTextColor(currentRowBg) }} className="border-b cursor-move"> 
+                                                    <tr key={task.id} 
+                                                        draggable="true" 
+                                                        onDragStart={(e) => handleDragStart(e, task)} 
+                                                        onDragEnd={handleDragEnd} 
+                                                        onDragOver={(e) => handleDragOver(e, task)} 
+                                                        onDragLeave={handleDragLeave} 
+                                                        onDrop={(e) => handleDrop(e, task)} 
+                                                        style={{ backgroundColor: currentRowBg, color: getTextColor(currentRowBg) }} 
+                                                        className={`border-b cursor-move select-none ${draggedTask && draggedTask.id === task.id ? 'opacity-50' : 'opacity-100'}`}> 
                                                         {columnOrder.map((columnKey) => ( <td key={columnKey} style={{ minWidth: `${columnWidths[columnKey]}px`, width: `${columnWidths[columnKey]}px` }} className="px-4 py-3 align-top">{renderCell(columnKey, task)}</td> ))} 
                                                     </tr> 
                                                 ); 

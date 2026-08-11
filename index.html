@@ -15,8 +15,6 @@
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <!-- html2canvas for PNG Export -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<!-- Vibrant.js for Better Image Theme Extraction -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/vibrant.js/3.2.1-alpha.1/vibrant.min.js"></script>
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
@@ -275,34 +273,6 @@ function App() {
         });
     }
   };
-
-  const handleImageThemeUpload = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (event) => {
-        const img = new window.Image();
-        img.onload = () => {
-            window.Vibrant.from(img.src).getPalette()
-                .then((palette) => {
-                    setCustomTheme({
-                        ...customTheme,
-                        primary: palette.Vibrant ? palette.Vibrant.getHex() : customTheme.primary,
-                        secondary: palette.Muted ? palette.Muted.getHex() : customTheme.secondary,
-                        accent: palette.LightVibrant ? palette.LightVibrant.getHex() : customTheme.accent,
-                        highlight: palette.DarkVibrant ? palette.DarkVibrant.getHex() : customTheme.highlight,
-                    });
-                })
-                .catch((err) => {
-                    console.error("Color extraction failed:", err);
-                    alert("Could not extract colors from this image. Ensure the image is valid!");
-                });
-        };
-        img.src = event.target.result;
-    };
-    reader.readAsDataURL(file);
-    e.target.value = ''; 
-};
 
   const totalTableWidth = columnOrder.reduce((acc, key) => acc + (columnWidths[key] || 150), 0);
   const mainScrollRef = useRef(null);
@@ -746,16 +716,6 @@ function App() {
       {showSettings && ( <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"> <div className="bg-white rounded-lg shadow-xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto"> <div className="flex items-center justify-between mb-6"><h3 className="text-xl font-semibold text-gray-900">Settings</h3><button onClick={() => setShowSettings(false)} className="text-gray-400 hover:text-gray-600"><X size={24} /></button></div> <div className="grid grid-cols-1 md:grid-cols-2 gap-6"> <div className="space-y-4"> <div className="flex items-center justify-between p-5 bg-gray-50 rounded-xl border border-gray-200 shadow-sm"> <div> <h4 className="font-bold text-gray-900 mb-1 text-lg">Dark Mode</h4> <p className="text-sm text-gray-600">Switch dashboard to dark styling</p> </div> <label className="relative inline-flex items-center cursor-pointer"> <input type="checkbox" checked={settings.darkMode} onChange={(e) => setSettings({ ...settings, darkMode: e.target.checked })} className="sr-only peer" /> <div className="w-14 h-7 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-blue-600 shadow-inner"></div> </label> </div> <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"> <div> <h4 className="font-semibold text-gray-900 mb-1">Use Themes</h4> <p className="text-sm text-gray-600">Enable color themes for your dashboard</p> </div> <label className="relative inline-flex items-center cursor-pointer"> <input type="checkbox" checked={settings.useTheme} onChange={(e) => setSettings({ ...settings, useTheme: e.target.checked })} className="sr-only peer" /> <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div> </label> </div> {settings.useTheme && ( <div className="p-4 bg-gray-50 rounded-lg"> <div className="mb-3"><h4 className="font-semibold text-gray-900 mb-1">Color Theme</h4><p className="text-sm text-gray-600">Choose your dashboard color palette</p></div> <div className="space-y-2 max-h-64 overflow-y-auto pr-2"> {Object.keys(allThemes).filter(name => name !== 'None').map(themeName => { const themeColors = allThemes[themeName]; const isCustom = !!customThemes[themeName]; return ( <div key={themeName} className="relative"> <button onClick={() => setSettings({ ...settings, colorTheme: themeName })} className={`w-full flex items-center justify-between p-3 rounded-lg border-2 transition-all ${settings.colorTheme === themeName ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300 bg-white'}`}> <div className="flex items-center gap-3"> <div className="flex gap-1"><div className="w-6 h-6 rounded" style={{ backgroundColor: themeColors.primary }}></div><div className="w-6 h-6 rounded" style={{ backgroundColor: themeColors.secondary }}></div><div className="w-6 h-6 rounded" style={{ backgroundColor: themeColors.accent }}></div><div className="w-6 h-6 rounded" style={{ backgroundColor: themeColors.highlight }}></div></div> <span className="font-medium text-gray-900">{themeName}</span> {isCustom && <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-semibold">Custom</span>} </div> {isCustom && ( <div className="flex items-center gap-1"> <button onClick={(e) => { e.stopPropagation(); setCustomTheme({ ...customThemes[themeName] }); setShowCustomThemeCreator(true); }} className="p-1.5 hover:bg-blue-100 rounded transition-colors text-blue-600" title="Edit this theme"><Edit2 size={16} /></button> <button onClick={(e) => { e.stopPropagation(); if (confirm(`Delete custom theme "${themeName}"?`)) { const updatedThemes = { ...customThemes }; delete updatedThemes[themeName]; setCustomThemes(updatedThemes); if (settings.colorTheme === themeName) { setSettings({ ...settings, colorTheme: 'Ocean Bliss' }); } } }} className="p-1.5 hover:bg-red-100 rounded transition-colors text-red-600" title="Delete this theme"><Trash2 size={16} /></button> </div> ) } </button> </div> ); }) } </div> <button onClick={() => setShowCustomThemeCreator(!showCustomThemeCreator)} className="w-full mt-3 py-2 px-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-lg font-medium transition-all flex items-center justify-center gap-2"><Plus size={18} /> {showCustomThemeCreator ? 'Hide Theme Creator' : 'Create Custom Theme'}</button> {showCustomThemeCreator && ( <div className="mt-4 p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg border-2 border-purple-300"> <div className="flex items-center justify-between mb-4"><h5 className="font-bold text-gray-900 flex items-center gap-2">Custom Theme Creator</h5></div>
                         
                         <div className="space-y-4"> 
-                            
-                            {/* AI IMAGE THEME EXTRACTOR */}
-                            <div className="bg-white p-3 rounded-lg border border-purple-200 shadow-sm">
-                                <label className="block text-sm font-semibold text-purple-800 mb-2 flex items-center gap-1"><Image size={14}/> Extract Theme from Image</label>
-                                <input type="file" accept="image/*" onChange={handleImageThemeUpload} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100" />
-                                <p className="text-xs text-gray-500 mt-2">Upload a logo or photo and we'll automatically generate a color palette!</p>
-                            </div>
-
-                            <hr className="border-purple-200"/>
-
                             <div> <label className="block text-sm font-medium text-gray-700 mb-1">Theme Name</label> <input type="text" value={customTheme.name} onChange={(e) => setCustomTheme({ ...customTheme, name: e.target.value })} placeholder="My Awesome Theme" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" /> </div> <div className="grid grid-cols-2 gap-3"> <div><label className="block text-sm font-medium text-gray-700 mb-1">Background</label><input type="color" value={customTheme.background} onChange={(e) => setCustomTheme({ ...customTheme, background: e.target.value })} className="w-full h-10 rounded border border-gray-300 cursor-pointer" /></div> <div><label className="block text-sm font-medium text-gray-700 mb-1">Card Background</label><input type="color" value={customTheme.cardBg} onChange={(e) => setCustomTheme({ ...customTheme, cardBg: e.target.value })} className="w-full h-10 rounded border border-gray-300 cursor-pointer" /></div> <div><label className="block text-sm font-medium text-gray-700 mb-1">Primary</label><input type="color" value={customTheme.primary} onChange={(e) => setCustomTheme({ ...customTheme, primary: e.target.value })} className="w-full h-10 rounded border border-gray-300 cursor-pointer" /></div> <div><label className="block text-sm font-medium text-gray-700 mb-1">Secondary</label><input type="color" value={customTheme.secondary} onChange={(e) => setCustomTheme({ ...customTheme, secondary: e.target.value })} className="w-full h-10 rounded border border-gray-300 cursor-pointer" /></div> <div><label className="block text-sm font-medium text-gray-700 mb-1">Accent (INBOX)</label><input type="color" value={customTheme.accent} onChange={(e) => setCustomTheme({ ...customTheme, accent: e.target.value })} className="w-full h-10 rounded border border-gray-300 cursor-pointer" /></div> <div><label className="block text-sm font-medium text-gray-700 mb-1">Highlight (COMPLETED)</label><input type="color" value={customTheme.highlight} onChange={(e) => setCustomTheme({ ...customTheme, highlight: e.target.value })} className="w-full h-10 rounded border border-gray-300 cursor-pointer" /></div> </div> <button onClick={() => { if (!customTheme.name.trim()) { alert('Please enter a theme name!'); return; } setCustomThemes(prev => ({ ...prev, [customTheme.name]: { ...customTheme } })); setSettings({ ...settings, colorTheme: customTheme.name }); setCustomTheme({ name: '', background: '#ffffff', cardBg: '#ffffff', primary: '#3b82f6', secondary: '#8b5cf6', accent: '#10b981', highlight: '#f59e0b', dark: '#1f2937', textPrimary: '#1f2937', textSecondary: '#6b7280' }); setShowCustomThemeCreator(false); }} className="w-full py-2 px-4 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white rounded-lg font-bold transition-all">Save Theme</button> </div> </div> )} </div> ) } </div> <div className="space-y-4"> <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-200"> <h4 className="font-bold text-gray-900 mb-1 flex items-center gap-2">Data Export Management</h4> <p className="text-sm text-gray-600 mb-4">Download your entire dashboard data as a JSON backup or export to Excel as a CSV.</p> <div className="space-y-3"> <button onClick={exportJSON} className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium flex justify-center items-center gap-2 transition-colors"><Save size={16} /> Export JSON (Backup)</button> <button onClick={exportCSV} className="w-full px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium flex justify-center items-center gap-2 transition-colors"><Download size={16} /> Export to Excel (CSV)</button> </div> </div> </div> </div> </div> </div> )}
     </div>
   );

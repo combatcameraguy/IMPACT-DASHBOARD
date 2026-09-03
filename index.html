@@ -241,6 +241,7 @@ function App() {
   useEffect(() => { if (!database) return; const connectedRef = database.ref(".info/connected"); const handleChange = (snap) => { setFirebaseStatus(snap.val() ? 'online' : 'offline'); }; connectedRef.on('value', handleChange); return () => connectedRef.off('value', handleChange); }, []);
 
   const [draggedTask, setDraggedTask] = useState(null); const [dragOverTask, setDragOverTask] = useState(null); const [deleteConfirm, setDeleteConfirm] = useState(null); const [draggedColumn, setDraggedColumn] = useState(null); const [dragOverColumn, setDragOverColumn] = useState(null); const [showSettings, setShowSettings] = useState(false); const [showAnalytics, setShowAnalytics] = useState(false); const [expandedDropdown, setExpandedDropdown] = useState(null); const [editingHeader, setEditingHeader] = useState(null); const [showCustomThemeCreator, setShowCustomThemeCreator] = useState(false);
+  const [isFaderDragging, setIsFaderDragging] = useState(false);
   
   const [searchQuery, setSearchQuery] = useState('');
   
@@ -340,6 +341,7 @@ function App() {
   const handleFaderInteraction = (e) => {
       e.preventDefault();
       isDraggingFader.current = true;
+      setIsFaderDragging(true);
       document.body.style.cursor = 'grabbing';
       document.body.style.userSelect = 'none';
 
@@ -363,6 +365,7 @@ function App() {
 
       const stopFader = () => {
           isDraggingFader.current = false;
+          setIsFaderDragging(false);
           document.body.style.cursor = '';
           document.body.style.userSelect = '';
           window.removeEventListener('mousemove', moveFader);
@@ -453,7 +456,9 @@ function App() {
       <div className="flex-shrink-0 z-40 rounded-xl shadow-lg p-4 mb-4" style={{ backgroundColor: theme.cardBg || theme.background }}>
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-end gap-3">
-            <h1 className="text-4xl font-extrabold tracking-tight" style={{ color: theme.textPrimary, fontFamily: '"Gotham", "Montserrat", sans-serif' }}>IMPACT Intake Dashboard</h1>
+            <h1 className="text-4xl font-extrabold tracking-tight" style={{ color: theme.textPrimary, fontFamily: '"Gotham", "Montserrat", sans-serif' }}>
+                <span style={{ color: '#f7b512', fontSize: '1.15em' }}>IMPACT</span> Intake Dashboard
+            </h1>
             <div className="flex flex-col pb-1">
                 <span className="text-sm font-medium text-gray-500">v6.0</span>
                 <div className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: theme.textSecondary }}>
@@ -482,8 +487,16 @@ function App() {
                     const thumbW = Math.max(5, faderState.widthRatio * 100); 
                     return (
                         <div 
-                            className="absolute top-1/2 -translate-y-1/2 rounded-xl shadow-lg transition-colors flex items-center justify-center border-2"
-                            style={{ height: '40px', width: `${thumbW}%`, left: `calc(${faderState.percent * 100}% - (${faderState.percent} * ${thumbW}%))`, backgroundColor: settings.darkMode ? '#4b5563' : '#64748b', borderColor: settings.darkMode ? '#1f2937' : '#94a3b8', cursor: 'grab' }}
+                            className="absolute top-1/2 -translate-y-1/2 rounded-xl shadow-lg flex items-center justify-center border-2"
+                            style={{ 
+                                height: '40px', 
+                                width: `${thumbW}%`, 
+                                left: `calc(${faderState.percent * 100}% - (${faderState.percent} * ${thumbW}%))`, 
+                                backgroundColor: settings.darkMode ? '#4b5563' : '#64748b', 
+                                borderColor: settings.darkMode ? '#1f2937' : '#94a3b8', 
+                                cursor: isFaderDragging ? 'grabbing' : 'grab',
+                                transition: isFaderDragging ? 'none' : 'left 1.5s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.3s, border-color 0.3s' 
+                            }}
                         >
                             <div className="flex gap-1 opacity-60">
                                 <div className="w-0.5 h-6 bg-white rounded-full"></div>
@@ -507,7 +520,7 @@ function App() {
                                 <div className="pb-6 min-h-[300px]"> 
                                     <table className="min-w-full" style={{ width: '100%', tableLayout: 'fixed' }}>
                                         <thead className="sticky top-[52px] z-20 shadow-sm"> 
-                                            <tr style={{ backgroundColor: settings.darkMode ? '#3a3a3a' : '#f9fafb', borderBottom: `1px solid ${settings.darkMode ? '#4a4a4a' : '#e5e7eb'}` }}> 
+                                            <tr style={{ backgroundColor: settings.darkMode ? '#3a3a3a' : '#f9fafb', color: settings.darkMode ? '#ffffff' : '#111827', borderBottom: `1px solid ${settings.darkMode ? '#4a4a4a' : '#e5e7eb'}` }}> 
                                                 {columnOrder.map((columnKey) => ( 
                                                     <th key={columnKey} style={{ minWidth: `${columnWidths[columnKey]}px`, width: `${columnWidths[columnKey]}px` }} className={`px-4 py-3 text-left text-sm font-semibold relative group/th select-none transition-all ${dragOverColumn === columnKey ? 'shadow-[inset_4px_0_0_0_#3b82f6] bg-blue-50/50' : ''}`} draggable={columnKey !== 'actions' && columnKey !== 'drag' && editingHeader !== columnKey} onDragStart={(e) => handleColumnDragStart(e, columnKey)} onDragOver={(e) => handleColumnDragOver(e, columnKey)} onDragLeave={handleColumnDragLeave} onDrop={(e) => handleColumnDrop(e, columnKey)}> 
                                                         <div className="flex items-center justify-between w-full"> 

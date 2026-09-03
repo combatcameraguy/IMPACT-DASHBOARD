@@ -264,7 +264,7 @@ function App() {
   
   const [searchQuery, setSearchQuery] = useState('');
   
-  const [chartPresets, setChartPresets] = useState({ followUp: 'pie', branch: 'pie', opportunities: 'bar', status: 'pie', education: 'pie', timeGroup: 'month', filterCol: '', filterVal: '' });
+  const [chartPresets, setChartPresets] = useState({ followUp: 'pie', branch: 'pie', opportunities: 'bar', status: 'pie', education: 'pie', timeGroup: 'month', filterCol: '', filterVal: '', timelineType: 'line' });
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
 
   const [recentlyDeleted, setRecentlyDeleted] = useState(null);
@@ -679,7 +679,13 @@ function App() {
                                     <option value="year">Year</option> 
                                 </select>
 
-                                <button onClick={() => {setDateRange({start:'', end:''}); setChartPresets({...chartPresets, filterCol: '', filterVal: ''});}} className="text-sm font-bold text-gray-500 hover:text-red-500 ml-3 transition-colors">Clear</button>
+                                <span className="text-sm font-medium ml-4 mr-1" style={{ color: theme.textSecondary }}>Chart:</span>
+                                <select className="text-base border rounded-lg px-4 py-3 font-semibold cursor-pointer" style={{ backgroundColor: theme.cardBg, color: theme.textPrimary }} value={chartPresets.timelineType} onChange={(e) => setChartPresets({...chartPresets, timelineType: e.target.value})}> 
+                                    <option value="line">Line Chart</option> 
+                                    <option value="bar">Bar Chart</option> 
+                                </select>
+
+                                <button onClick={() => {setDateRange({start:'', end:''}); setChartPresets({...chartPresets, filterCol: '', filterVal: '', timelineType: 'line'});}} className="text-sm font-bold text-gray-500 hover:text-red-500 ml-3 transition-colors">Clear</button>
                                 <button onClick={() => handleExportPNG('widget-timeline', 'Timeline-Chart')} className="p-3 hover:bg-gray-200 rounded-lg text-blue-500 ml-2 transition-colors" title="Export PNG"><Download size={24}/></button>
                             </div>
                         </div>
@@ -732,7 +738,7 @@ function App() {
                             
                             const sortedData = {};
                             Object.keys(counts).sort().forEach(k => { sortedData[counts[k].label] = counts[k].count; });
-                            return <SimpleLineChart data={sortedData} theme={theme} />; 
+                            return chartPresets.timelineType === 'bar' ? <SimpleBarChart data={sortedData} theme={theme} /> : <SimpleLineChart data={sortedData} theme={theme} />; 
                         })()} 
                     </div>
 
@@ -792,23 +798,44 @@ function App() {
                         
                         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6 p-4 rounded-lg max-h-[600px] overflow-y-auto" style={{ backgroundColor: settings.darkMode ? '#3a3a3a' : '#f9fafb' }}>
                             {(() => { 
-                                const notes = []; 
+                                const oppCounts = {}; 
                                 tasks.forEach(t => { 
                                     if (!t.opportunities) return; 
                                     t.opportunities.split(',').forEach(opp => { 
-                                        let o = opp.trim(); 
-                                        if(o) notes.push(o); 
+                                        let original = opp.trim(); 
+                                        if(!original) return;
+                                        let normalized = original.toLowerCase(); 
+                                        if(!oppCounts[normalized]) oppCounts[normalized] = { count: 0, label: original };
+                                        oppCounts[normalized].count += 1;
                                     }); 
                                 }); 
                                 
-                                const postItColors = ['bg-yellow-200', 'bg-pink-200', 'bg-blue-200', 'bg-green-200', 'bg-orange-200'];
+                                const sortedOpps = Object.values(oppCounts).sort((a, b) => b.count - a.count);
+                                const rainbowColors = ['bg-red-200', 'bg-orange-200', 'bg-yellow-200', 'bg-green-200', 'bg-blue-200', 'bg-indigo-200', 'bg-purple-200', 'bg-pink-200'];
                                 
-                                return notes.map((note, idx) => {
-                                    const colorClass = postItColors[idx % postItColors.length];
+                                if (sortedOpps.length === 0) return <div className="text-gray-500 italic p-4 text-center col-span-full">No opportunities data available</div>;
+
+                                const maxCount = sortedOpps[0].count;
+
+                                return sortedOpps.map((opp, idx) => {
+                                    const colorClass = rainbowColors[idx % rainbowColors.length];
                                     const rotateClass = idx % 2 === 0 ? 'rotate-1' : '-rotate-1';
+                                    
+                                    let sizeClass = 'col-span-1 h-32 text-sm'; // Size 1
+                                    if (opp.count > 1) {
+                                        if (opp.count === maxCount && maxCount > 2) {
+                                            sizeClass = 'col-span-2 md:col-span-3 h-48 text-xl font-bold'; // Size 3
+                                        } else {
+                                            sizeClass = 'col-span-2 h-40 text-lg font-semibold'; // Size 2
+                                        }
+                                    }
+
                                     return (
-                                        <div key={idx} className={`${colorClass} ${rotateClass} p-4 shadow-md hover:rotate-0 transition-transform text-gray-800 font-medium text-sm h-32 flex items-center justify-center text-center border-t-8 border-black/5`}>
-                                            {note}
+                                        <div key={idx} className={`${colorClass} ${rotateClass} ${sizeClass} p-4 shadow-md hover:rotate-0 transition-all flex items-center justify-center text-center border-t-8 border-black/10 relative overflow-hidden rounded-sm`}>
+                                            <span className="relative z-10 text-gray-800 drop-shadow-sm">{opp.label}</span>
+                                            <span className="absolute inset-0 flex items-center justify-center text-[6rem] font-black text-black/5 pointer-events-none z-0 select-none">
+                                                {opp.count}
+                                            </span>
                                         </div>
                                     )
                                 }); 

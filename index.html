@@ -3,11 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>IMPACT Dashboard</title>
-<link rel="icon" href="favicon.png">
+<title>IMPACT Intake Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Poppins:wght@700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Kanit:wght@400;600;700&display=swap" rel="stylesheet">
 <!-- Roboto Font for Analytics -->
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
@@ -16,6 +15,8 @@
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <!-- html2canvas for PNG Export -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<!-- ColorThief for Image Theme Extraction -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/color-thief/2.3.0/color-thief.umd.js"></script>
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
@@ -27,60 +28,17 @@ input[type="date"]::-webkit-calendar-picker-indicator { font-size: 2em; cursor: 
 input[type="date"]::-webkit-datetime-edit { padding: 0.5em; }
 @media screen and (-webkit-min-device-pixel-ratio:0) { input[type="date"] { min-height: 2.5em; } }
 tbody tr td > div { color: inherit; }
-.animate-scale-in, .modal-backdrop { animation-timing-function: cubic-bezier(1.5, 0.1, 0.25, 1); animation-duration: 0.3s; }
+.animate-scale-in, .dropdown-content, .modal-backdrop { animation-timing-function: cubic-bezier(1.5, 0.1, 0.25, 1); animation-duration: 0.3s; }
+@keyframes slideDown { 0% { opacity: 0; transform: translateY(-20px) scale(0.95); max-height: 0; } 100% { opacity: 1; transform: translateY(0) scale(1); max-height: 600px; } }
 @keyframes fadeIn { 0% { opacity: 0; transform: translateY(-10px); } 100% { opacity: 1; transform: translateY(0); } }
-.animate-fade-in { animation: fadeIn 0.5s ease-out forwards; opacity: 0; }
+.animate-fade-in { animation: fadeIn 1s ease-out forwards; opacity: 0; }
+tbody tr { transition: all 2s cubic-bezier(0.34, 1.56, 0.64, 1); }
 tbody tr.calendar-expanded { background: linear-gradient(to right, rgba(59, 130, 246, 0.08), rgba(59, 130, 246, 0.04)) !important; box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.3); }
 tbody tr.calendar-expanded td { padding-top: 2rem !important; padding-bottom: 2rem !important; vertical-align: top !important; transition: padding 2s cubic-bezier(0.34, 1.56, 0.64, 1); }
 tbody tr.calendar-expanded td > div { width: 100%; }
+.chevron-rotate { transition: transform 2s cubic-bezier(0.34, 1.56, 0.64, 1); }
 .hide-native-scroll::-webkit-scrollbar { height: 0px; width: 0px; }
 .hide-native-scroll { scrollbar-width: none; }
-
-/* Restoring the Magic 2-second bounce - Disabled when dragging OR glowing */
-tbody.idle-table tr:not(.is-new-row):not(.is-new-row-dark) { 
-    transition: all 2s cubic-bezier(0.34, 1.56, 0.64, 1); 
-}
-
-/* Unified Dropdown Animations with 2-second ramping finesse */
-.dropdown-menu {
-    transition: all 2s cubic-bezier(0.34, 1.56, 0.64, 1);
-    transform-origin: top center;
-}
-.dropdown-open {
-    opacity: 1;
-    visibility: visible;
-    transform: scaleY(1) translateY(0);
-}
-.dropdown-closed {
-    opacity: 0;
-    visibility: hidden;
-    transform: scaleY(0.9) translateY(-10px);
-    pointer-events: none;
-}
-
-.chevron-rotate { 
-    transition: transform 2s cubic-bezier(0.34, 1.56, 0.64, 1); 
-}
-
-/* Dedicated Glowing Keyframes that overpower other settings */
-@keyframes glowLight {
-    0%, 100% { background-color: #dbeafe; }
-    50% { background-color: #93c5fd; }
-}
-@keyframes glowDark {
-    0%, 100% { background-color: #1e3a8a; }
-    50% { background-color: #2563eb; }
-}
-.is-new-row {
-    animation: glowLight 1.5s ease-in-out infinite;
-    box-shadow: inset 6px 0 0 0 #3b82f6;
-    color: #1e3a8a;
-}
-.is-new-row-dark {
-    animation: glowDark 1.5s ease-in-out infinite;
-    box-shadow: inset 6px 0 0 0 #60a5fa;
-    color: #ffffff;
-}
 </style>
 </head>
 <body>
@@ -96,7 +54,7 @@ const Edit2 = ({ size = 16 }) => <svg width={size} height={size} viewBox="0 0 24
 const Save = ({ size = 16 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21H5a2 2 0 0 1-2 2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>;
 const Upload = ({ size = 16 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>;
 const Download = ({ size = 16 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>;
-const Settings = ({ size = 16 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1-1-1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>;
+const Settings = ({ size = 16 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>;
 const Image = ({ size = 16 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>;
 const X = ({ size = 24 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>;
 const Calendar = ({ size = 16 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>;
@@ -109,7 +67,7 @@ const renderIcon = (iconName) => { switch(iconName) { case 'User': return <User 
 
 const EditableHeader = ({ initialLabel, onSave, onCancel }) => {
     const [val, setVal] = useState(initialLabel); useEffect(() => { setVal(initialLabel); }, [initialLabel]);
-    return ( <input autoFocus value={val} onChange={e => setVal(e.target.value)} onBlur={() => { if(val.trim() && val !== initialLabel) { onSave(val.trim()); } else { onCancel(); } }} onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); if (e.key === 'Escape') onCancel(); }} className="text-black bg-white px-1 rounded-lg text-sm w-full font-semibold border-b border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 shadow-sm" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }} /> )
+    return ( <input autoFocus value={val} onChange={e => setVal(e.target.value)} onBlur={() => { if(val.trim() && val !== initialLabel) { onSave(val.trim()); } else { onCancel(); } }} onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); if (e.key === 'Escape') onCancel(); }} className="text-black bg-white px-1 rounded text-sm w-full font-semibold border-b border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 shadow-sm" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }} /> )
 };
 const InlineCalendar = ({ value, onChange, darkMode, onToggle, isExpanded, textSize = "text-sm" }) => {
   const parseSafeDate = (val) => { if (!val) return null; let d = new Date(val.includes('-') && val.length === 10 ? val + 'T00:00:00' : val); return isNaN(d.getTime()) ? null : d; };
@@ -122,19 +80,21 @@ const InlineCalendar = ({ value, onChange, darkMode, onToggle, isExpanded, textS
   const days = getDaysInMonth(currentMonth); const monthName = currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   const pyClass = textSize === 'text-base' || textSize === 'text-lg' ? 'py-3' : 'py-2';
   return (
-    <div className="w-full relative dropdown-container">
-      <button type="button" onClick={onToggle} className={`border rounded-lg px-4 ${pyClass} hover:border-blue-400 focus:outline-none focus:border-blue-500 w-full text-left flex items-center justify-between`} style={{ borderColor: isExpanded ? '#3b82f6' : (darkMode ? '#4a4a4a' : '#e5e7eb'), backgroundColor: darkMode ? '#3a3a3a' : '#ffffff', color: darkMode ? '#ffffff' : '#000000', minHeight: '38px', boxShadow: isExpanded ? '0 0 0 3px rgba(59, 130, 246, 0.2)' : 'none', transition: 'all .2s ease' }}>
+    <div className="w-full relative">
+      <button type="button" onClick={onToggle} className={`border rounded-xl px-4 ${pyClass} hover:border-blue-400 focus:outline-none focus:border-blue-500 w-full text-left flex items-center justify-between`} style={{ borderColor: isExpanded ? '#3b82f6' : (darkMode ? '#4a4a4a' : '#e5e7eb'), backgroundColor: darkMode ? '#3a3a3a' : '#ffffff', color: darkMode ? '#ffffff' : '#000000', minHeight: '38px', boxShadow: isExpanded ? '0 0 0 3px rgba(59, 130, 246, 0.2)' : 'none', transition: 'all .2s ease' }}>
         <span className={`font-semibold tracking-wide ${textSize}`}>{formatDisplayDate(value)}</span><div className="chevron-rotate" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}><ChevronDown /></div>
       </button>
-      <div className={`mt-1 rounded-lg shadow-xl border-2 z-[60] absolute left-0 top-full dropdown-menu ${isExpanded ? 'dropdown-open' : 'dropdown-closed'}`} style={{ backgroundColor: darkMode ? '#2a2a2a' : '#ffffff', borderColor: '#3b82f6', padding: '16px', width: '360px' }}>
-        <div className="flex items-center justify-between mb-4">
-          <button type="button" onClick={() => changeMonth(-1)} className="p-2 rounded-lg hover:scale-110 transition-transform font-bold text-xl" style={{ backgroundColor: darkMode ? '#3a3a3a' : '#f3f4f6', color: darkMode ? '#ffffff' : '#000000' }}>&lt;</button>
-          <span className="font-bold text-lg" style={{ color: darkMode ? '#ffffff' : '#000000' }}>{monthName}</span>
-          <button type="button" onClick={() => changeMonth(1)} className="p-2 rounded-lg hover:scale-110 transition-transform font-bold text-xl" style={{ backgroundColor: darkMode ? '#3a3a3a' : '#f3f4f6', color: darkMode ? '#ffffff' : '#000000' }}>&gt;</button>
+      {isExpanded && (
+        <div className="mt-1 rounded-xl shadow-xl border-2 z-[60] absolute left-0 top-full" style={{ backgroundColor: darkMode ? '#2a2a2a' : '#ffffff', borderColor: '#3b82f6', padding: '16px', width: '360px', animation: 'slideDown 2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards' }}>
+          <div className="flex items-center justify-between mb-4">
+            <button type="button" onClick={() => changeMonth(-1)} className="p-2 rounded-lg hover:scale-110 transition-transform font-bold text-xl" style={{ backgroundColor: darkMode ? '#3a3a3a' : '#f3f4f6', color: darkMode ? '#ffffff' : '#000000' }}>&lt;</button>
+            <span className="font-bold text-lg" style={{ color: darkMode ? '#ffffff' : '#000000' }}>{monthName}</span>
+            <button type="button" onClick={() => changeMonth(1)} className="p-2 rounded-lg hover:scale-110 transition-transform font-bold text-xl" style={{ backgroundColor: darkMode ? '#3a3a3a' : '#f3f4f6', color: darkMode ? '#ffffff' : '#000000' }}>&gt;</button>
+          </div>
+          <div className="grid grid-cols-7 gap-1 mb-2"> {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => <div key={day} className="text-center font-bold text-xs" style={{ color: darkMode ? '#9ca3af' : '#6b7280' }}>{day}</div>) } </div>
+          <div className="grid grid-cols-7 gap-1"> {days.map((day, idx) => { if (!day) return <div key={idx} />; const isSelected = selectedDate && selectedDate.getDate() === day && selectedDate.getMonth() === currentMonth.getMonth() && selectedDate.getFullYear() === currentMonth.getFullYear(); return <button key={idx} type="button" onClick={() => handleDayClick(day)} className="rounded-lg text-sm font-semibold transition-all duration-2000 hover:scale-110 hover:shadow-md" style={{ padding: '8px', backgroundColor: isSelected ? '#3b82f6' : (darkMode ? '#3a3a3a' : '#f9fafb'), color: isSelected ? '#ffffff' : (darkMode ? '#ffffff' : '#000000'), border: isSelected ? '2px solid #2563eb' : '1px solid ' + (darkMode ? '#4a4a4a' : '#e5e7eb') }}>{day}</button>; }) } </div>
         </div>
-        <div className="grid grid-cols-7 gap-1 mb-2"> {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => <div key={day} className="text-center font-bold text-xs" style={{ color: darkMode ? '#9ca3af' : '#6b7280' }}>{day}</div>) } </div>
-        <div className="grid grid-cols-7 gap-1"> {days.map((day, idx) => { if (!day) return <div key={idx} />; const isSelected = selectedDate && selectedDate.getDate() === day && selectedDate.getMonth() === currentMonth.getMonth() && selectedDate.getFullYear() === currentMonth.getFullYear(); return <button key={idx} type="button" onClick={() => handleDayClick(day)} className="rounded-lg text-sm font-semibold transition-transform duration-300 hover:scale-110" style={{ padding: '8px', backgroundColor: isSelected ? '#3b82f6' : (darkMode ? '#3a3a3a' : '#f9fafb'), color: isSelected ? '#ffffff' : (darkMode ? '#ffffff' : '#000000'), border: isSelected ? '2px solid #3b82f6' : '1px solid ' + (darkMode ? '#4a4a4a' : '#e5e7eb'), boxShadow: isSelected ? '0 0 15px 5px rgba(59, 130, 246, 0.8)' : 'none' }}>{day}</button>; }) } </div>
-      </div>
+      )}
     </div>
   );
 };
@@ -151,8 +111,8 @@ const SimpleBarChart = ({ data, theme }) => {
                 const color = chartColors[index % chartColors.length];
                 return ( 
                 <div key={key} className="flex flex-col items-center justify-end w-full group relative" style={{ height: '100%' }}>
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-8 bg-gray-800 text-white text-xs rounded-lg px-2 py-1 z-10 pointer-events-none whitespace-nowrap">{key}: {data[key]}</div>
-                    <div className="w-full rounded-t-lg transition-all duration-1000 ease-out hover:opacity-80" style={{ height: `${(data[key] / max) * 100}%`, backgroundColor: color, minHeight: data[key] > 0 ? '4px' : '0' }}></div>
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-8 bg-gray-800 text-white text-xs rounded px-2 py-1 z-10 pointer-events-none whitespace-nowrap">{key}: {data[key]}</div>
+                    <div className="w-full rounded-t transition-all duration-1000 ease-out hover:opacity-80" style={{ height: `${(data[key] / max) * 100}%`, backgroundColor: color, minHeight: data[key] > 0 ? '4px' : '0' }}></div>
                     <div className="text-[10px] truncate w-full text-center mt-2 font-medium" style={{ color: theme.textSecondary }} title={key}>{key}</div>
                 </div> 
                 )
@@ -194,33 +154,18 @@ const SimplePieChart = ({ data, colors, theme }) => {
 
 const SimpleLineChart = ({ data, theme }) => {
     const entries = Object.entries(data);
-    const containerRef = useRef(null);
-    const [containerWidth, setContainerWidth] = useState(800);
-
-    useEffect(() => {
-        const updateWidth = () => {
-            if (containerRef.current) {
-                setContainerWidth(containerRef.current.clientWidth);
-            }
-        };
-        setTimeout(updateWidth, 50); 
-        window.addEventListener('resize', updateWidth);
-        return () => window.removeEventListener('resize', updateWidth);
-    }, [data]);
-
     if (entries.length === 0) return <div className="text-gray-500 italic p-4 text-center">No data available to chart</div>;
     
     const maxVal = Math.max(...entries.map(e => e[1]), 1);
-    const yMax = Math.ceil(maxVal * 1.1); 
+    const yMax = Math.ceil(maxVal * 1.1); // Dynamic scaling + 10% buffer
     
     const paddingLeft = 40;
     const paddingRight = 30;
     const paddingTop = 30;
     const paddingBottom = 40;
-    
-    // Dynamic width expansion based on data density
+    const minWidth = 800;
     const calculatedWidth = entries.length * 80 + paddingLeft + paddingRight;
-    const width = Math.max(containerWidth || 800, calculatedWidth); 
+    const width = Math.max(minWidth, calculatedWidth); 
     const height = 300;
     
     const graphWidth = width - paddingLeft - paddingRight;
@@ -249,8 +194,8 @@ const SimpleLineChart = ({ data, theme }) => {
     });
 
     return (
-        <div ref={containerRef} className="w-full overflow-x-auto hide-native-scroll relative pt-4 flex justify-start">
-            <svg viewBox={`0 0 ${width} ${height}`} className="w-full" style={{ height: '300px', width: `${width}px`, minWidth: '100%' }} preserveAspectRatio="xMidYMid meet">
+        <div className="w-full overflow-x-auto hide-native-scroll relative pt-4">
+            <svg viewBox={`0 0 ${width} ${height}`} className="w-full" style={{ height: '300px', minWidth: '100%' }}>
                 {gridLines}
                 <polyline fill="none" stroke={theme.primary} strokeWidth="4" points={points} strokeLinejoin="round" />
                 {entries.map((entry, index) => {
@@ -296,31 +241,17 @@ function App() {
   useEffect(() => { if (!database) return; const connectedRef = database.ref(".info/connected"); const handleChange = (snap) => { setFirebaseStatus(snap.val() ? 'online' : 'offline'); }; connectedRef.on('value', handleChange); return () => connectedRef.off('value', handleChange); }, []);
 
   const [draggedTask, setDraggedTask] = useState(null); const [dragOverTask, setDragOverTask] = useState(null); const [deleteConfirm, setDeleteConfirm] = useState(null); const [draggedColumn, setDraggedColumn] = useState(null); const [dragOverColumn, setDragOverColumn] = useState(null); const [showSettings, setShowSettings] = useState(false); const [showAnalytics, setShowAnalytics] = useState(false); const [expandedDropdown, setExpandedDropdown] = useState(null); const [editingHeader, setEditingHeader] = useState(null); const [showCustomThemeCreator, setShowCustomThemeCreator] = useState(false);
-  const [editingThemeName, setEditingThemeName] = useState(null);
   
   const [searchQuery, setSearchQuery] = useState('');
   
-  const [chartPresets, setChartPresets] = useState({ followUp: 'pie', branch: 'pie', opportunities: 'bar', status: 'pie', education: 'pie', timeGroup: 'month', filterCol: '', filterVal: '', timelineType: 'line' });
+  const [chartPresets, setChartPresets] = useState({ followUp: 'pie', branch: 'pie', opportunities: 'bar', status: 'pie', education: 'pie', timeGroup: 'month', filterCol: '', filterVal: '' });
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
-
-  const [recentlyDeleted, setRecentlyDeleted] = useState(null);
-  const [showExportModal, setShowExportModal] = useState(false);
-
-  useEffect(() => {
-      const handleClickOutside = (event) => {
-          if (!event.target.closest('.dropdown-container')) {
-              setExpandedDropdown(null);
-          }
-      };
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   const loadFromStorage = (key, defaultValue) => { try { const saved = localStorage.getItem(key); return saved ? JSON.parse(saved) : defaultValue; } catch (error) { return defaultValue; } };
   
-  const initialColumnsDef = { timestamp: { label: 'Timestamp', icon: 'Calendar' }, fullName: { label: 'Full Name', icon: 'User' }, followUpRequired: { label: 'Follow Up?', icon: 'none' }, phone: { label: 'Phone Number', icon: 'none' }, email: { label: 'Email Address', icon: 'none' }, currentStatus: { label: 'Current Status', icon: 'none' }, branchOfService: { label: 'Branch of Service', icon: 'none' }, agreeToContact: { label: 'Agree to Contact', icon: 'none' }, mos: { label: 'MOS / Job Specialty', icon: 'none' }, payGrade: { label: 'Pay Grade', icon: 'none' }, etsDate: { label: 'ETS / Retirement Date', icon: 'Calendar' }, terminalLeave: { label: 'Terminal Leave Date', icon: 'Calendar' }, location: { label: 'Location (City, State)', icon: 'none' }, transportation: { label: 'Reliable Transportation?', icon: 'none' }, opportunities: { label: 'Opportunities Interested In', icon: 'none' }, educationLevel: { label: 'Education Level', icon: 'none' }, tradeSchoolDetails: { label: 'Trade School Details', icon: 'none' }, skills: { label: 'Skills/Experience', icon: 'none' }, areasOfInterest: { label: 'Areas of Interest', icon: 'none' }, availability: { label: 'Availability/Limitations', icon: 'none' }, referralSource: { label: 'Referral Source', icon: 'none' }, pipelineStatus: { label: 'Pipeline Status', icon: 'none' }, drag: { label: '', icon: 'none' }, actions: { label: '', icon: 'none' } };
-  const initialWidths = { timestamp: 150, fullName: 200, followUpRequired: 130, phone: 150, email: 200, currentStatus: 180, branchOfService: 180, agreeToContact: 150, mos: 200, payGrade: 120, etsDate: 150, terminalLeave: 150, location: 180, transportation: 180, opportunities: 250, educationLevel: 200, tradeSchoolDetails: 200, skills: 250, areasOfInterest: 250, availability: 250, referralSource: 200, pipelineStatus: 150, drag: 50, actions: 80 };
-  const defaultColumnOrder = [ 'drag', 'fullName', 'followUpRequired', 'branchOfService', 'email', 'phone', 'timestamp', 'agreeToContact', 'mos', 'payGrade', 'etsDate', 'terminalLeave', 'location', 'transportation', 'educationLevel', 'tradeSchoolDetails', 'opportunities', 'skills', 'areasOfInterest', 'availability', 'referralSource', 'currentStatus', 'actions' ];
+  const initialColumnsDef = { timestamp: { label: 'Timestamp', icon: 'Calendar' }, fullName: { label: 'Full Name', icon: 'User' }, followUpRequired: { label: 'Follow Up?', icon: 'none' }, phone: { label: 'Phone Number', icon: 'none' }, email: { label: 'Email Address', icon: 'none' }, currentStatus: { label: 'Current Status', icon: 'none' }, branchOfService: { label: 'Branch of Service', icon: 'none' }, agreeToContact: { label: 'Agree to Contact', icon: 'none' }, mos: { label: 'MOS / Job Specialty', icon: 'none' }, payGrade: { label: 'Pay Grade', icon: 'none' }, etsDate: { label: 'ETS / Retirement Date', icon: 'Calendar' }, terminalLeave: { label: 'Terminal Leave Date', icon: 'Calendar' }, location: { label: 'Location (City, State)', icon: 'none' }, transportation: { label: 'Reliable Transportation?', icon: 'none' }, opportunities: { label: 'Opportunities Interested In', icon: 'none' }, educationLevel: { label: 'Education Level', icon: 'none' }, tradeSchoolDetails: { label: 'Trade School Details', icon: 'none' }, skills: { label: 'Skills/Experience', icon: 'none' }, areasOfInterest: { label: 'Areas of Interest', icon: 'none' }, availability: { label: 'Availability/Limitations', icon: 'none' }, pipelineStatus: { label: 'Pipeline Status', icon: 'none' }, drag: { label: '', icon: 'none' }, actions: { label: '', icon: 'none' } };
+  const initialWidths = { timestamp: 150, fullName: 200, followUpRequired: 130, phone: 150, email: 200, currentStatus: 180, branchOfService: 180, agreeToContact: 150, mos: 200, payGrade: 120, etsDate: 150, terminalLeave: 150, location: 180, transportation: 180, opportunities: 250, educationLevel: 200, tradeSchoolDetails: 200, skills: 250, areasOfInterest: 250, availability: 250, pipelineStatus: 150, drag: 50, actions: 80 };
+  const defaultColumnOrder = [ 'drag', 'fullName', 'followUpRequired', 'branchOfService', 'email', 'phone', 'timestamp', 'agreeToContact', 'mos', 'payGrade', 'etsDate', 'terminalLeave', 'location', 'transportation', 'educationLevel', 'tradeSchoolDetails', 'opportunities', 'skills', 'areasOfInterest', 'availability', 'currentStatus', 'actions' ];
   
   const [columns, setColumns] = useState(() => loadFromStorage('comcam_columns_v6', initialColumnsDef)); const [tasks, setTasks] = useState(() => loadFromStorage('comcam_tasks', [])); const [columnWidths, setColumnWidths] = useState(() => loadFromStorage('comcam_columnWidths_v6', initialWidths)); const [columnOrder, setColumnOrder] = useState(() => loadFromStorage('comcam_columnOrder_v6', defaultColumnOrder)); const [expandedGroups, setExpandedGroups] = useState(() => loadFromStorage('comcam_expandedGroups', { group1: true, group2: true })); const [settings, setSettings] = useState(() => loadFromStorage('comcam_settings', { darkMode: false, useTheme: false, colorTheme: 'None' }));
   const [customThemes, setCustomThemes] = useState(() => loadFromStorage('comcam_customThemes', {}));
@@ -345,17 +276,44 @@ function App() {
     }
   };
 
+  const handleImageThemeUpload = (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+          const img = new window.Image();
+          img.onload = () => {
+              try {
+                  const colorThief = new ColorThief();
+                  const dominant = colorThief.getColor(img);
+                  const palette = colorThief.getPalette(img, 5); 
+                  const rgbToHex = (r, g, b) => '#' + [r, g, b].map(x => {
+                      const hex = x.toString(16);
+                      return hex.length === 1 ? '0' + hex : hex;
+                  }).join('');
+                  setCustomTheme({
+                      ...customTheme,
+                      primary: rgbToHex(dominant[0], dominant[1], dominant[2]),
+                      secondary: palette[1] ? rgbToHex(palette[1][0], palette[1][1], palette[1][2]) : customTheme.secondary,
+                      accent: palette[2] ? rgbToHex(palette[2][0], palette[2][1], palette[2][2]) : customTheme.accent,
+                      highlight: palette[3] ? rgbToHex(palette[3][0], palette[3][1], palette[3][2]) : customTheme.highlight,
+                  });
+              } catch (err) {
+                  console.error("Color extraction failed:", err);
+                  alert("Could not extract colors from this image. Try another one!");
+              }
+          };
+          img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+      e.target.value = ''; 
+  };
+
   const totalTableWidth = columnOrder.reduce((acc, key) => acc + (columnWidths[key] || 150), 0);
   const mainScrollRef = useRef(null);
   const faderTrackRef = useRef(null);
   const isDraggingFader = useRef(false);
   const [faderState, setFaderState] = useState({ percent: 0, widthRatio: 1 });
-
-  // References setup to intercept incoming firebase tasks for the "glow" effect
-  const tasksRefLocal = useRef([]);
-  useEffect(() => { tasksRefLocal.current = tasks; }, [tasks]);
-  const initialLoadCompleteRef = useRef(false);
-  useEffect(() => { initialLoadCompleteRef.current = initialLoadComplete; }, [initialLoadComplete]);
 
   useEffect(() => {
       const updateFader = () => {
@@ -417,89 +375,27 @@ function App() {
   };
 
   const updateTask = (id, field, value) => { setTasks(prev => prev.map(task => { if (task.id === id) { const updatedTask = {...task, [field]: value }; if (field === 'pipelineStatus') { if (value === 'Done') updatedTask.group = 'group2'; else if (task.pipelineStatus === 'Done' && value !== 'Done') updatedTask.group = 'group1'; } if (field === 'followUpRequired') { if (value === 'Yes') updatedTask.group = 'group2'; else if (value === 'No' && task.group === 'group2') updatedTask.group = 'group1'; } return updatedTask; } return task; })); };
-  const confirmDelete = (task) => { setDeleteConfirm(task); }; 
-  const deleteTask = (id) => { 
-      const taskToDelete = tasks.find(t => t.id === id);
-      if (taskToDelete) {
-          setRecentlyDeleted(taskToDelete);
-          setTasks(prev => prev.filter(task => task.id !== id));
-          setDeleteConfirm(null);
-          setTimeout(() => setRecentlyDeleted(null), 7000); 
-      }
-  };
-  const addTask = (groupId) => { setTasks(prev => [...prev, { id: Math.max(...(tasks.length ? tasks.map(t => t.id) : [0]), 0) + 1, group: groupId, branchOfService: 'Not started', followUpRequired: 'Pending', fullName: 'New User', timestamp: new Date().toISOString().split('T')[0], isNew: true }]); };
+  const confirmDelete = (task) => { setDeleteConfirm(task); }; const deleteTask = (id) => { setTasks(prev => prev.filter(task => task.id !== id)); setDeleteConfirm(null); };
+  const addTask = (groupId) => { setTasks(prev => [...prev, { id: Math.max(...(tasks.length ? tasks.map(t => t.id) : [0]), 0) + 1, group: groupId, branchOfService: 'Not started', followUpRequired: 'Pending', fullName: 'New User', timestamp: new Date().toISOString().split('T')[0] }]); };
   const handleAddColumn = () => { const name = prompt("Enter a name for the new column:"); if (!name || !name.trim()) return; const newKey = 'custom_' + Date.now(); setColumns(prev => ({ ...prev, [newKey]: { label: name.trim(), icon: 'none' } })); setColumnWidths(prev => ({ ...prev, [newKey]: 150 })); setColumnOrder(prev => { const newOrder = [...prev]; const actionIdx = newOrder.indexOf('actions'); if (actionIdx !== -1) { newOrder.splice(actionIdx, 0, newKey); } else { newOrder.push(newKey); } return newOrder; }); };
-  
-  const formatDate = (dateString) => {
-      if (!dateString) return '';
-      const d = new Date(dateString.includes('-') && dateString.length === 10 ? dateString + 'T00:00:00' : dateString);
-      return isNaN(d.getTime()) ? dateString : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  };
   const formatToYYYYMMDD = (raw) => { if (!raw) return ''; let d = raw.trim().split(' ')[0]; if (d.includes('/')) { const parts = d.split('/'); if (parts.length === 3) { let y = parts[2]; if (y.length === 2) y = '20' + y; return `${y}-${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}`; } } return d; };
   
   const parseCSV = (text) => { const result = []; let row = []; let inQuotes = false; let currentValue = ''; for (let i = 0; i < text.length; i++) { const char = text[i]; if (char === '"') { if (inQuotes && text[i+1] === '"') { currentValue += '"'; i++; } else { inQuotes = !inQuotes; } } else if (char === ',' && !inQuotes) { row.push(currentValue); currentValue = ''; } else if ((char === '\n' || char === '\r') && !inQuotes) { if (char === '\r' && text[i+1] === '\n') i++; row.push(currentValue); if (row.some(val => val.trim() !== '')) result.push(row); row = []; currentValue = ''; } else { currentValue += char; } } if (currentValue || row.length > 0) { row.push(currentValue); result.push(row); } if (result.length < 2) return []; const headers = result[0].map(h => h.trim()); return result.slice(1).map(rowArray => { const obj = {}; headers.forEach((h, idx) => { obj[h] = rowArray[idx] ? rowArray[idx].trim() : ''; }); return obj; }); };
-  const handleFileLoad = (event) => { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (e) => { try { const content = e.target.result; const isCSV = file.name.toLowerCase().endsWith('.csv'); if (isCSV) { const parsedData = parseCSV(content); const newTasks = parsedData.map((row, index) => { const ts = formatToYYYYMMDD(row['Timestamp'] || new Date().toISOString().split('T')[0]); const etsDateStr = formatToYYYYMMDD(row[Object.keys(row).find(k => k.toLowerCase().includes('ets'))] || ''); const terminalLeaveStr = formatToYYYYMMDD(row[Object.keys(row).find(k => k.toLowerCase().includes('terminal leave'))] || ''); return { id: Math.max(...(tasks.length ? tasks.map(t => t.id) : [0]), 0) + index + 1, group: 'group1', isNew: true, timestamp: ts, fullName: row[Object.keys(row).find(k => k.toLowerCase().includes('name'))] || '', phone: row[Object.keys(row).find(k => k.toLowerCase().includes('phone'))] || '', email: row[Object.keys(row).find(k => k.toLowerCase().includes('email'))] || '', currentStatus: row[Object.keys(row).find(k => k.toLowerCase().includes('current status'))] || '', branchOfService: row[Object.keys(row).find(k => k.toLowerCase().includes('branch'))] || 'Not started', followUpRequired: 'Pending', agreeToContact: row[Object.keys(row).find(k => k.toLowerCase().includes('agree'))] || '', mos: row[Object.keys(row).find(k => k.toLowerCase().includes('mos'))] || '', payGrade: row[Object.keys(row).find(k => k.toLowerCase().includes('pay grade'))] || '', etsDate: etsDateStr, terminalLeave: terminalLeaveStr, location: row[Object.keys(row).find(k => k.toLowerCase().includes('city, state'))] || '', transportation: row[Object.keys(row).find(k => k.toLowerCase().includes('transportation'))] || '', opportunities: row[Object.keys(row).find(k => k.toLowerCase().includes('opportunities'))] || '', skills: row[Object.keys(row).find(k => k.toLowerCase().includes('skills'))] || '', areasOfInterest: row[Object.keys(row).find(k => k.toLowerCase().includes('areas'))] || '', availability: row[Object.keys(row).find(k => k.toLowerCase().includes('availability'))] || '', referralSource: row[Object.keys(row).find(k => k.toLowerCase().includes('hear about') || k.toLowerCase().includes('referral'))] || '' }; }); setTasks(prev => [...prev, ...newTasks]); alert(`CSV loaded successfully!\n\nImported ${newTasks.length} intake forms to your INBOX.`); } else { const loadedData = JSON.parse(content); if (loadedData.tasks && Array.isArray(loadedData.tasks)) { setTasks(loadedData.tasks); if (loadedData.columnWidths) setColumnWidths(loadedData.columnWidths); if (loadedData.columnOrder) setColumnOrder(loadedData.columnOrder); if (loadedData.settings) setSettings(loadedData.settings); if (loadedData.expandedGroups) setExpandedGroups(loadedData.expandedGroups); if (loadedData.columns) setColumns(loadedData.columns); if (loadedData.customThemes) setCustomThemes(loadedData.customThemes); alert('Dashboard backup data loaded successfully!'); } } } catch (error) { alert('Error loading file: ' + error.message); } }; reader.readAsText(file); event.target.value = ''; };
+  const handleFileLoad = (event) => { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (e) => { try { const content = e.target.result; const isCSV = file.name.toLowerCase().endsWith('.csv'); if (isCSV) { const parsedData = parseCSV(content); const newTasks = parsedData.map((row, index) => { const ts = formatToYYYYMMDD(row['Timestamp'] || new Date().toISOString().split('T')[0]); const etsDateStr = formatToYYYYMMDD(row[Object.keys(row).find(k => k.toLowerCase().includes('ets'))] || ''); const terminalLeaveStr = formatToYYYYMMDD(row[Object.keys(row).find(k => k.toLowerCase().includes('terminal leave'))] || ''); return { id: Math.max(...(tasks.length ? tasks.map(t => t.id) : [0]), 0) + index + 1, group: 'group1', timestamp: ts, fullName: row[Object.keys(row).find(k => k.toLowerCase().includes('name'))] || '', phone: row[Object.keys(row).find(k => k.toLowerCase().includes('phone'))] || '', email: row[Object.keys(row).find(k => k.toLowerCase().includes('email'))] || '', currentStatus: row[Object.keys(row).find(k => k.toLowerCase().includes('current status'))] || '', branchOfService: row[Object.keys(row).find(k => k.toLowerCase().includes('branch'))] || 'Not started', followUpRequired: 'Pending', agreeToContact: row[Object.keys(row).find(k => k.toLowerCase().includes('agree'))] || '', mos: row[Object.keys(row).find(k => k.toLowerCase().includes('mos'))] || '', payGrade: row[Object.keys(row).find(k => k.toLowerCase().includes('pay grade'))] || '', etsDate: etsDateStr, terminalLeave: terminalLeaveStr, location: row[Object.keys(row).find(k => k.toLowerCase().includes('city, state'))] || '', transportation: row[Object.keys(row).find(k => k.toLowerCase().includes('transportation'))] || '', opportunities: row[Object.keys(row).find(k => k.toLowerCase().includes('opportunities'))] || '', skills: row[Object.keys(row).find(k => k.toLowerCase().includes('skills'))] || '', areasOfInterest: row[Object.keys(row).find(k => k.toLowerCase().includes('areas'))] || '', availability: row[Object.keys(row).find(k => k.toLowerCase().includes('availability'))] || '' }; }); setTasks(prev => [...prev, ...newTasks]); alert(`CSV loaded successfully!\n\nImported ${newTasks.length} intake forms to your INBOX.`); } else { const loadedData = JSON.parse(content); if (loadedData.tasks && Array.isArray(loadedData.tasks)) { setTasks(loadedData.tasks); if (loadedData.columnWidths) setColumnWidths(loadedData.columnWidths); if (loadedData.columnOrder) setColumnOrder(loadedData.columnOrder); if (loadedData.settings) setSettings(loadedData.settings); if (loadedData.expandedGroups) setExpandedGroups(loadedData.expandedGroups); if (loadedData.columns) setColumns(loadedData.columns); if (loadedData.customThemes) setCustomThemes(loadedData.customThemes); alert('Dashboard backup data loaded successfully!'); } } } catch (error) { alert('Error loading file: ' + error.message); } }; reader.readAsText(file); event.target.value = ''; };
   const exportJSON = () => { const dataToSave = { tasks, columnWidths, columnOrder, settings, expandedGroups, columns, customThemes, savedAt: new Date().toISOString(), version: '6.0' }; const jsonString = JSON.stringify(dataToSave, null, 2); const now = new Date(); const filename = `IMPACT-BACKUP-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}.json`; const blob = new Blob([jsonString], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); };
-  const handleCustomExport = () => {
-    const checkboxes = document.querySelectorAll('input[id^="export-"]:checked');
-    const selectedCols = Array.from(checkboxes).map(cb => cb.value);
-    
-    if(selectedCols.length === 0) return alert('Please select at least one column to export!');
-    if(tasks.length === 0) return alert('No data to export!');
-    
-    const headers = selectedCols.map(k => columns[k]?.label || k);
-    const csvRows = tasks.map(t => selectedCols.map(k => `"${(t[k] || '').replace(/"/g, '""')}"`).join(','));
-    const csvContent = [headers.join(','), ...csvRows].join('\n');
-    
-    const now = new Date();
-    const filename = `IMPACT-Export-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}.csv`;
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    
-    setShowExportModal(false);
-  };
+  const exportCSV = () => { if(tasks.length === 0) return alert('No data to export!'); const exportColumns = columnOrder.filter(k => k !== 'drag' && k !== 'actions'); const headers = exportColumns.map(k => columns[k]?.label || k); const csvRows = tasks.map(t => exportColumns.map(k => `"${(t[k] || '').replace(/"/g, '""')}"`).join(',')); const csvContent = [headers.join(','), ...csvRows].join('\n'); const now = new Date(); const filename = `IMPACT-Export-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}.csv`; const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); };
   
   useEffect(() => { const unsubscribe = auth.onAuthStateChanged((currentUser) => { setUser(currentUser); setLoading(false); }); return () => unsubscribe(); }, []);
   
   useEffect(() => { 
     if (user && database) { 
         setFirebaseSynced(false); setInitialLoadComplete(false); let loadedCount = 0; const totalLoads = 7; const checkAllLoaded = () => { loadedCount++; if (loadedCount === totalLoads) { setFirebaseSynced(true); setInitialLoadComplete(true); } }; 
-        const tasksRef = database.ref('userData/tasks'); const tasksListener = tasksRef.on('value', (s) => { 
-            const d = s.val(); 
-            if (d) { 
-                let incomingTasks = Array.isArray(d) ? d : Object.values(d);
-                
-                // Intercept new firebase tasks and force them to glow
-                if (initialLoadCompleteRef.current) {
-                    const existingIds = new Set(tasksRefLocal.current.map(t => t.id));
-                    let hasNew = false;
-                    incomingTasks = incomingTasks.map(t => {
-                        if (!existingIds.has(t.id)) {
-                            hasNew = true;
-                            return { ...t, isNew: true };
-                        }
-                        return t;
-                    });
-                    if (hasNew) database.ref('userData/tasks').set(incomingTasks);
-                }
-
-                setTasks(incomingTasks); 
-            } 
-            if (loadedCount < totalLoads) checkAllLoaded(); 
-        }); 
-        const widthsRef = database.ref('userData/columnWidths'); const widthsListener = widthsRef.on('value', (s) => { const d = s.val(); if (d) { const merged = { ...d }; if (!merged.followUpRequired) merged.followUpRequired = 130; if (!merged.referralSource) merged.referralSource = 200; setColumnWidths(merged); } if (loadedCount < totalLoads) checkAllLoaded(); }); 
-        const orderRef = database.ref('userData/columnOrder'); const orderListener = orderRef.on('value', (s) => { const d = s.val(); if (d) { let merged = [...d]; if (!merged.includes('followUpRequired')) { const insertIdx = merged.indexOf('fullName') !== -1 ? merged.indexOf('fullName') + 1 : 2; merged.splice(insertIdx, 0, 'followUpRequired'); } if (!merged.includes('referralSource')) { const insertIdx2 = merged.indexOf('availability') !== -1 ? merged.indexOf('availability') + 1 : merged.length - 2; merged.splice(insertIdx2, 0, 'referralSource'); } setColumnOrder(merged); } if (loadedCount < totalLoads) checkAllLoaded(); }); 
+        const tasksRef = database.ref('userData/tasks'); const tasksListener = tasksRef.on('value', (s) => { const d = s.val(); if (d) { setTasks(Array.isArray(d) ? d : Object.values(d)); } if (loadedCount < totalLoads) checkAllLoaded(); }); 
+        const widthsRef = database.ref('userData/columnWidths'); const widthsListener = widthsRef.on('value', (s) => { const d = s.val(); if (d) { const merged = { ...d }; if (!merged.followUpRequired) merged.followUpRequired = 130; setColumnWidths(merged); } if (loadedCount < totalLoads) checkAllLoaded(); }); 
+        const orderRef = database.ref('userData/columnOrder'); const orderListener = orderRef.on('value', (s) => { const d = s.val(); if (d) { let merged = [...d]; if (!merged.includes('followUpRequired')) { const insertIdx = merged.indexOf('fullName') !== -1 ? merged.indexOf('fullName') + 1 : 2; merged.splice(insertIdx, 0, 'followUpRequired'); } setColumnOrder(merged); } if (loadedCount < totalLoads) checkAllLoaded(); }); 
         const groupsRef = database.ref('userData/expandedGroups'); const groupsListener = groupsRef.on('value', (s) => { const d = s.val(); if (d) setExpandedGroups(d); if (loadedCount < totalLoads) checkAllLoaded(); }); 
         const settingsRef = database.ref('userData/settings'); const settingsListener = settingsRef.on('value', (s) => { const d = s.val(); if (d) setSettings(d); if (loadedCount < totalLoads) checkAllLoaded(); }); 
-        const columnsRef = database.ref('userData/columns'); const columnsListener = columnsRef.on('value', (s) => { const d = s.val(); if (d) { const merged = { ...d }; if (!merged.followUpRequired) merged.followUpRequired = { label: 'Follow Up?', icon: 'none' }; if (!merged.referralSource) merged.referralSource = { label: 'Referral Source', icon: 'none' }; setColumns(merged); localStorage.setItem('comcam_columns_v6', JSON.stringify(merged)); } if (loadedCount < totalLoads) checkAllLoaded(); }); 
+        const columnsRef = database.ref('userData/columns'); const columnsListener = columnsRef.on('value', (s) => { const d = s.val(); if (d) { const merged = { ...d }; if (!merged.followUpRequired) merged.followUpRequired = { label: 'Follow Up?', icon: 'none' }; setColumns(merged); localStorage.setItem('comcam_columns_v6', JSON.stringify(merged)); } if (loadedCount < totalLoads) checkAllLoaded(); }); 
         const themesRef = database.ref('userData/customThemes'); const themesListener = themesRef.on('value', (s) => { const d = s.val(); if (d) { setCustomThemes(d); localStorage.setItem('comcam_customThemes', JSON.stringify(d)); } if (loadedCount < totalLoads) checkAllLoaded(); }); 
         return () => { tasksRef.off('value', tasksListener); widthsRef.off('value', widthsListener); orderRef.off('value', orderListener); groupsRef.off('value', groupsListener); settingsRef.off('value', settingsListener); columnsRef.off('value', columnsListener); themesRef.off('value', themesListener); }; 
     } 
@@ -521,27 +417,27 @@ function App() {
   const handleResizeStart = (e, columnKey) => { e.preventDefault(); e.stopPropagation(); setResizingColumn(columnKey); resizeStartX.current = e.clientX; resizeStartWidth.current = columnWidths[columnKey]; }; const handleMouseMove = useCallback((e) => { if (resizingColumn) { const diff = e.clientX - resizeStartX.current; setColumnWidths(prev => ({ ...prev, [resizingColumn]: Math.max(80, resizeStartWidth.current + diff) })); } }, [resizingColumn]); const handleMouseUp = useCallback(() => { if (resizingColumn) setResizingColumn(null); }, [resizingColumn]);
   useEffect(() => { if (resizingColumn) { document.addEventListener('mousemove', handleMouseMove); document.addEventListener('mouseup', handleMouseUp); document.body.style.cursor = 'col-resize'; document.body.style.userSelect = 'none'; } return () => { document.removeEventListener('mousemove', handleMouseMove); document.removeEventListener('mouseup', handleMouseUp); document.body.style.cursor = ''; document.body.style.userSelect = ''; }; }, [resizingColumn, handleMouseMove, handleMouseUp]);
   
-  const EditableCell = ({ value, taskId, field }) => { const [isEditing, setIsEditing] = useState(false); const [tempValue, setTempValue] = useState(value); useEffect(() => { setTempValue(value); }, [value]); const handleSave = () => { updateTask(taskId, field, tempValue); setIsEditing(false); }; if (isEditing) return <input type="text" value={tempValue} onChange={e => setTempValue(e.target.value)} onBlur={handleSave} onKeyDown={e => e.key === 'Enter' && handleSave()} className="w-full px-2 py-1 border border-blue-500 rounded-lg focus:outline-none text-black" style={{ backgroundColor: settings.darkMode ? '#3a3a3a' : '#ffffff', color: settings.darkMode ? '#ffffff' : '#1f2937' }} autoFocus />; return <div onClick={() => setIsEditing(true)} className="cursor-pointer px-2 py-1 rounded-lg min-h-[24px]" onMouseEnter={e => e.currentTarget.style.backgroundColor = settings.darkMode ? '#3a3a3a' : '#f9fafb'} onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}>{value || <span className="italic opacity-60">Click to edit</span>}</div>; };
+  const EditableCell = ({ value, taskId, field }) => { const [isEditing, setIsEditing] = useState(false); const [tempValue, setTempValue] = useState(value); useEffect(() => { setTempValue(value); }, [value]); const handleSave = () => { updateTask(taskId, field, tempValue); setIsEditing(false); }; if (isEditing) return <input type="text" value={tempValue} onChange={e => setTempValue(e.target.value)} onBlur={handleSave} onKeyDown={e => e.key === 'Enter' && handleSave()} className="w-full px-2 py-1 border border-blue-500 rounded focus:outline-none text-black" style={{ backgroundColor: settings.darkMode ? '#3a3a3a' : '#ffffff', color: settings.darkMode ? '#ffffff' : '#1f2937' }} autoFocus />; return <div onClick={() => setIsEditing(true)} className="cursor-pointer px-2 py-1 rounded min-h-[24px]" onMouseEnter={e => e.currentTarget.style.backgroundColor = settings.darkMode ? '#3a3a3a' : '#f9fafb'} onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}>{value || <span className="italic opacity-60">Click to edit</span>}</div>; };
   
-  const BranchCell = ({ status, taskId, isExpanded, onToggle }) => { const options = ['Army', 'Navy', 'Air Force', 'Marines', 'Coast Guard', 'Space Force', 'Not started']; return ( <div className="w-full relative dropdown-container"> <button onClick={onToggle} style={{ backgroundColor: branchColors[status] || '#9ca3af', color: getTextColor(branchColors[status] || '#9ca3af'), boxShadow: isExpanded ? '0 0 0 3px rgba(59, 130, 246, 0.2)' : 'none', transition: 'all .2s ease' }} className="px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 w-full text-left flex items-center justify-between"> <span>{status || 'Not started'}</span> <div className="chevron-rotate" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}><ChevronDown /></div> </button> <div className={`mt-1 rounded-lg shadow-xl border-2 p-2 space-y-2 z-50 absolute left-0 top-full dropdown-menu ${isExpanded ? 'dropdown-open' : 'dropdown-closed'}`} style={{ borderColor: '#3b82f6', backgroundColor: settings.darkMode ? '#2a2a2a' : '#ffffff', width: '200px' }}> {options.map(o => ( <button key={o} onClick={() => { updateTask(taskId, 'branchOfService', o); onToggle(); }} style={{ backgroundColor: branchColors[o], color: getTextColor(branchColors[o]) }} className="px-4 py-3 w-full text-left text-sm font-semibold rounded-lg hover:scale-105 hover:shadow-lg transition-transform duration-300">{o}</button> )) } </div> </div> ); };
+  const BranchCell = ({ status, taskId, isExpanded, onToggle }) => { const options = ['Army', 'Navy', 'Air Force', 'Marines', 'Coast Guard', 'Space Force', 'Not started']; return ( <div className="w-full relative"> <button onClick={onToggle} style={{ backgroundColor: branchColors[status] || '#9ca3af', color: getTextColor(branchColors[status] || '#9ca3af'), boxShadow: isExpanded ? '0 0 0 3px rgba(59, 130, 246, 0.2)' : 'none', transition: 'all .2s ease' }} className="px-3 py-2 rounded text-sm font-medium hover:opacity-90 w-full text-left flex items-center justify-between"> <span>{status || 'Not started'}</span> <div className="chevron-rotate" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}><ChevronDown /></div> </button> {isExpanded && ( <div className="mt-1 rounded-lg shadow-xl border-2 p-2 space-y-2 z-50 absolute left-0 top-full" style={{ borderColor: '#3b82f6', backgroundColor: settings.darkMode ? '#2a2a2a' : '#ffffff', animation: 'slideDown 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards', width: '200px' }}> {options.map(o => ( <button key={o} onClick={() => { updateTask(taskId, 'branchOfService', o); onToggle(); }} style={{ backgroundColor: branchColors[o], color: getTextColor(branchColors[o]) }} className="px-4 py-3 w-full text-left text-sm font-semibold rounded-lg hover:scale-105 hover:shadow-lg transition-all duration-2000">{o}</button> )) } </div> )} </div> ); };
   
   const FollowUpCell = ({ status, taskId, isExpanded, onToggle, activeTheme }) => { 
     const options = ['Yes', 'No', 'Pending']; 
     const getStatusColor = (opt) => { if (opt === 'Yes') return activeTheme.primary; if (opt === 'No') return activeTheme.secondary; if (opt === 'Pending') return activeTheme.accent; return '#9ca3af'; };
     return ( 
-      <div className="w-full relative dropdown-container"> 
-        <button onClick={onToggle} style={{ backgroundColor: getStatusColor(status), color: getTextColor(getStatusColor(status)), boxShadow: isExpanded ? '0 0 0 3px rgba(59, 130, 246, 0.2)' : 'none', transition: 'all .2s ease' }} className="px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 w-full text-left flex items-center justify-between"> <span>{status || 'Pending'}</span> <div className="chevron-rotate" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}><ChevronDown /></div> </button> 
-        <div className={`mt-1 rounded-lg shadow-xl border-2 p-2 space-y-2 z-50 absolute left-0 top-full dropdown-menu ${isExpanded ? 'dropdown-open' : 'dropdown-closed'}`} style={{ borderColor: '#3b82f6', backgroundColor: settings.darkMode ? '#2a2a2a' : '#ffffff', width: '130px' }}> {options.map(o => ( <button key={o} onClick={() => { updateTask(taskId, 'followUpRequired', o); onToggle(); }} style={{ backgroundColor: getStatusColor(o), color: getTextColor(getStatusColor(o)) }} className="px-4 py-3 w-full text-left text-sm font-semibold rounded-lg hover:scale-105 hover:shadow-lg transition-transform duration-300">{o}</button> )) } </div> 
+      <div className="w-full relative"> 
+        <button onClick={onToggle} style={{ backgroundColor: getStatusColor(status), color: getTextColor(getStatusColor(status)), boxShadow: isExpanded ? '0 0 0 3px rgba(59, 130, 246, 0.2)' : 'none', transition: 'all .2s ease' }} className="px-3 py-2 rounded text-sm font-medium hover:opacity-90 w-full text-left flex items-center justify-between"> <span>{status || 'Pending'}</span> <div className="chevron-rotate" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}><ChevronDown /></div> </button> 
+        {isExpanded && ( <div className="mt-1 rounded-lg shadow-xl border-2 p-2 space-y-2 z-50 absolute left-0 top-full" style={{ borderColor: '#3b82f6', backgroundColor: settings.darkMode ? '#2a2a2a' : '#ffffff', animation: 'slideDown 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards', width: '130px' }}> {options.map(o => ( <button key={o} onClick={() => { updateTask(taskId, 'followUpRequired', o); onToggle(); }} style={{ backgroundColor: getStatusColor(o), color: getTextColor(getStatusColor(o)) }} className="px-4 py-3 w-full text-left text-sm font-semibold rounded-lg hover:scale-105 hover:shadow-lg transition-all duration-2000">{o}</button> )) } </div> )} 
       </div> 
     ); 
   };
 
-  const renderCell = (columnKey, task) => { switch (columnKey) { case 'branchOfService': return <BranchCell status={task.branchOfService || 'Not started'} taskId={task.id} isExpanded={expandedDropdown === `${task.id}-branchOfService`} onToggle={() => setExpandedDropdown(expandedDropdown === `${task.id}-branchOfService` ? null : `${task.id}-branchOfService`)} />; case 'followUpRequired': return <FollowUpCell status={task.followUpRequired || 'Pending'} taskId={task.id} isExpanded={expandedDropdown === `${task.id}-followUp`} onToggle={() => setExpandedDropdown(expandedDropdown === `${task.id}-followUp` ? null : `${task.id}-followUp`)} activeTheme={theme} />; case 'timestamp': return <div className="font-extrabold px-2 py-1" style={{ fontFamily: "'Poppins', 'Montserrat', sans-serif", color: theme.textPrimary }}>{formatDate(task.timestamp)}</div>; case 'etsDate': return <InlineCalendar value={task.etsDate} onChange={v => updateTask(task.id, 'etsDate', v)} darkMode={settings.darkMode} isExpanded={expandedDropdown === `${task.id}-etsDate`} onToggle={() => setExpandedDropdown(expandedDropdown === `${task.id}-etsDate` ? null : `${task.id}-etsDate`)} />; case 'terminalLeave': return <InlineCalendar value={task.terminalLeave} onChange={v => updateTask(task.id, 'terminalLeave', v)} darkMode={settings.darkMode} isExpanded={expandedDropdown === `${task.id}-terminalLeave`} onToggle={() => setExpandedDropdown(expandedDropdown === `${task.id}-terminalLeave` ? null : `${task.id}-terminalLeave`)} />; case 'drag': return <div className="flex items-center justify-center"><GripVertical size={16} className="text-gray-400 cursor-move" /></div>; case 'actions': return <button onClick={() => confirmDelete(task)} className="text-gray-400 hover:text-red-500 p-2 rounded-lg"><Trash2 size={18} /></button>; default: return <EditableCell value={task[columnKey] || ''} taskId={task.id} field={columnKey} />; } };
+  const renderCell = (columnKey, task) => { switch (columnKey) { case 'branchOfService': return <BranchCell status={task.branchOfService || 'Not started'} taskId={task.id} isExpanded={expandedDropdown === `${task.id}-branchOfService`} onToggle={() => setExpandedDropdown(expandedDropdown === `${task.id}-branchOfService` ? null : `${task.id}-branchOfService`)} />; case 'followUpRequired': return <FollowUpCell status={task.followUpRequired || 'Pending'} taskId={task.id} isExpanded={expandedDropdown === `${task.id}-followUp`} onToggle={() => setExpandedDropdown(expandedDropdown === `${task.id}-followUp` ? null : `${task.id}-followUp`)} activeTheme={theme} />; case 'timestamp': return <InlineCalendar value={task.timestamp} onChange={v => updateTask(task.id, 'timestamp', v)} darkMode={settings.darkMode} isExpanded={expandedDropdown === `${task.id}-timestamp`} onToggle={() => setExpandedDropdown(expandedDropdown === `${task.id}-timestamp` ? null : `${task.id}-timestamp`)} />; case 'etsDate': return <InlineCalendar value={task.etsDate} onChange={v => updateTask(task.id, 'etsDate', v)} darkMode={settings.darkMode} isExpanded={expandedDropdown === `${task.id}-etsDate`} onToggle={() => setExpandedDropdown(expandedDropdown === `${task.id}-etsDate` ? null : `${task.id}-etsDate`)} />; case 'terminalLeave': return <InlineCalendar value={task.terminalLeave} onChange={v => updateTask(task.id, 'terminalLeave', v)} darkMode={settings.darkMode} isExpanded={expandedDropdown === `${task.id}-terminalLeave`} onToggle={() => setExpandedDropdown(expandedDropdown === `${task.id}-terminalLeave` ? null : `${task.id}-terminalLeave`)} />; case 'drag': return <div className="flex items-center justify-center"><GripVertical size={16} className="text-gray-400 cursor-move" /></div>; case 'actions': return <button onClick={() => confirmDelete(task)} className="text-gray-400 hover:text-red-500 p-2 rounded"><Trash2 size={18} /></button>; default: return <EditableCell value={task[columnKey] || ''} taskId={task.id} field={columnKey} />; } };
   
   const GroupHeader = ({ title, groupId, count, bgColor }) => ( 
-    <div className="flex items-center justify-between rounded-lg mb-2 shadow-sm transition-all" style={{ backgroundColor: bgColor, color: getTextColor(bgColor) }} onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }} onDrop={(e) => { e.preventDefault(); if(draggedTask) { const newTasks = [...tasks]; const draggedIndex = newTasks.findIndex(t => t.id === draggedTask.id); newTasks[draggedIndex].group = groupId; setTasks(newTasks); setDraggedTask(null); } } }> 
-        <div className="px-4 py-3 flex items-center gap-3 sticky left-0 z-20"> 
-            <button onClick={() => toggleGroup(groupId)} className="hover:bg-white/20 rounded-lg p-1 transition-colors">{expandedGroups[groupId] ? <ChevronDown /> : <ChevronRight />}</button> 
+    <div className="flex items-center justify-between rounded-lg mb-2 shadow-sm transition-all sticky top-0 z-30" style={{ backgroundColor: bgColor, color: getTextColor(bgColor) }} onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }} onDrop={(e) => { e.preventDefault(); if(draggedTask) { const newTasks = [...tasks]; const draggedIndex = newTasks.findIndex(t => t.id === draggedTask.id); newTasks[draggedIndex].group = groupId; setTasks(newTasks); setDraggedTask(null); } } }> 
+        <div className="px-4 py-3 flex items-center gap-3 sticky left-0 w-max z-20"> 
+            <button onClick={() => toggleGroup(groupId)} className="hover:bg-white/20 rounded p-1 transition-colors">{expandedGroups[groupId] ? <ChevronDown /> : <ChevronRight />}</button> 
             <span className="font-semibold text-lg">{title}</span><span className="bg-white/20 px-2 py-0.5 rounded-full text-sm">{count} items</span> 
         </div> 
     </div> 
@@ -549,15 +445,15 @@ function App() {
   
   const groups = { group1: { title: 'INBOX', bgColor: theme.accent }, group2: { title: 'Follow Up', bgColor: theme.highlight } }; 
   if (loading) return <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#1f2937' }}><div className="text-white text-lg animate-pulse">Loading...</div></div>;
-  if (!user) return ( <div className="min-h-screen flex items-center justify-center p-6 bg-gray-900"> <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8"> <div className="text-center mb-8"><Lock size={40} className="mx-auto text-blue-500 mb-4" /><h1 className="text-3xl font-bold text-gray-900" style={{ fontFamily: '"Poppins", "Montserrat", sans-serif' }}>IMPACT Dashboard</h1></div> <form onSubmit={handleLogin} className="space-y-4"> <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="your@email.com" required /> <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="........" required /> {authError && <div className="bg-red-50 text-red-700 px-4 py-3 rounded-lg text-sm">{authError}</div>} <button type="submit" className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg">Sign In</button> </form> </div> </div> );
+  if (!user) return ( <div className="min-h-screen flex items-center justify-center p-6 bg-gray-900"> <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8"> <div className="text-center mb-8"><Lock size={40} className="mx-auto text-blue-500 mb-4" /><h1 className="text-3xl font-bold text-gray-900" style={{ fontFamily: '"Gotham", "Montserrat", sans-serif' }}>IMPACT Impact Dashboard</h1></div> <form onSubmit={handleLogin} className="space-y-4"> <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="your@email.com" required /> <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="........" required /> {authError && <div className="bg-red-50 text-red-700 px-4 py-3 rounded-lg text-sm">{authError}</div>} <button type="submit" className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg">Sign In</button> </form> </div> </div> );
   
   return (
     <div className={`h-screen flex flex-col p-4 ${resizingColumn ? 'cursor-col-resize' : ''}`} style={{ backgroundColor: theme.background }}>
       
-      <div className="flex-shrink-0 z-40 rounded-lg shadow-lg p-4 mb-4" style={{ backgroundColor: theme.cardBg || theme.background }}>
+      <div className="flex-shrink-0 z-40 rounded-xl shadow-lg p-4 mb-4" style={{ backgroundColor: theme.cardBg || theme.background }}>
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-end gap-3">
-            <h1 className="text-4xl font-extrabold tracking-tight" style={{ color: theme.textPrimary, fontFamily: '"Poppins", "Montserrat", sans-serif' }}>IMPACT Dashboard</h1>
+            <h1 className="text-4xl font-extrabold tracking-tight" style={{ color: theme.textPrimary, fontFamily: '"Gotham", "Montserrat", sans-serif' }}>IMPACT Intake Dashboard</h1>
             <div className="flex flex-col pb-1">
                 <span className="text-sm font-medium text-gray-500">v6.0</span>
                 <div className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: theme.textSecondary }}>
@@ -577,17 +473,17 @@ function App() {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col min-h-0 rounded-lg shadow-lg relative bg-white overflow-hidden" style={{ backgroundColor: theme.background }}>
+      <div className="flex-1 flex flex-col min-h-0 rounded-xl shadow-lg relative bg-white overflow-hidden" style={{ backgroundColor: theme.background }}>
         
         {/* CUSTOM STUDIO FADER */}
         <div className="flex-shrink-0 z-30 w-full px-8 py-6 border-b relative" style={{ borderColor: settings.darkMode ? '#4a4a4a' : '#e5e7eb', backgroundColor: theme.background }}>
-            <div ref={faderTrackRef} onMouseDown={handleFaderInteraction} className="w-full relative rounded-lg shadow-inner cursor-pointer" style={{ height: '14px', backgroundColor: '#3c3c3c' }}>
+            <div ref={faderTrackRef} onMouseDown={handleFaderInteraction} className="w-full relative rounded-full shadow-inner cursor-pointer" style={{ height: '14px', backgroundColor: settings.darkMode ? '#374151' : '#e2e8f0' }}>
                 {(() => {
                     const thumbW = Math.max(5, faderState.widthRatio * 100); 
                     return (
                         <div 
-                            className="absolute top-1/2 -translate-y-1/2 rounded-lg shadow-lg transition-colors flex items-center justify-center border-2"
-                            style={{ height: '40px', width: `${thumbW}%`, left: `calc(${faderState.percent * 100}% - (${faderState.percent} * ${thumbW}%))`, backgroundColor: '#f7b512', borderColor: '#f7b512', cursor: 'grab' }}
+                            className="absolute top-1/2 -translate-y-1/2 rounded-xl shadow-lg transition-colors flex items-center justify-center border-2"
+                            style={{ height: '40px', width: `${thumbW}%`, left: `calc(${faderState.percent * 100}% - (${faderState.percent} * ${thumbW}%))`, backgroundColor: settings.darkMode ? '#4b5563' : '#64748b', borderColor: settings.darkMode ? '#1f2937' : '#94a3b8', cursor: 'grab' }}
                         >
                             <div className="flex gap-1 opacity-60">
                                 <div className="w-0.5 h-6 bg-white rounded-full"></div>
@@ -600,7 +496,7 @@ function App() {
             </div>
         </div>
 
-        <div ref={mainScrollRef} onScroll={handleMainScroll} className="flex-1 hide-native-scroll overflow-auto w-full pb-4 relative">
+        <div ref={mainScrollRef} onScroll={handleMainScroll} className="flex-1 hide-native-scroll overflow-auto w-full pb-4">
             <div style={{ minWidth: `${totalTableWidth}px` }}>
                 {Object.entries(groups).map(([groupId, groupData]) => { 
                     const groupTasks = filteredTasks.filter(t => t.group === groupId); 
@@ -610,7 +506,7 @@ function App() {
                             {expandedGroups[groupId] && ( 
                                 <div className="pb-6 min-h-[300px]"> 
                                     <table className="min-w-full" style={{ width: '100%', tableLayout: 'fixed' }}>
-                                        <thead className="sticky top-0 z-30 shadow-sm"> 
+                                        <thead className="sticky top-[52px] z-20 shadow-sm"> 
                                             <tr style={{ backgroundColor: settings.darkMode ? '#3a3a3a' : '#f9fafb', borderBottom: `1px solid ${settings.darkMode ? '#4a4a4a' : '#e5e7eb'}` }}> 
                                                 {columnOrder.map((columnKey) => ( 
                                                     <th key={columnKey} style={{ minWidth: `${columnWidths[columnKey]}px`, width: `${columnWidths[columnKey]}px` }} className={`px-4 py-3 text-left text-sm font-semibold relative group/th select-none transition-all ${dragOverColumn === columnKey ? 'shadow-[inset_4px_0_0_0_#3b82f6] bg-blue-50/50' : ''}`} draggable={columnKey !== 'actions' && columnKey !== 'drag' && editingHeader !== columnKey} onDragStart={(e) => handleColumnDragStart(e, columnKey)} onDragOver={(e) => handleColumnDragOver(e, columnKey)} onDragLeave={handleColumnDragLeave} onDrop={(e) => handleColumnDrop(e, columnKey)}> 
@@ -631,21 +527,12 @@ function App() {
                                                 ))} 
                                             </tr> 
                                         </thead>
-                                        <tbody className={draggedTask ? 'dragging-active' : 'idle-table'}> 
+                                        <tbody> 
                                             {groupTasks.map((task, index) => { 
-                                                const isNew = task.isNew === true;
-                                                const currentRowBg = index % 2 === 0 ? (settings.darkMode ? '#3a3a3a' : theme.cardBg || theme.background) : (settings.darkMode ? '#2e2e2e' : theme.accent + '30'); 
+                                                const currentRowBg = index % 2 === 0 ? (settings.darkMode ? '#2a2a2a' : (theme.cardBg || theme.background)) : (settings.darkMode ? `${theme.accent}25` : `${theme.accent}30`);
+                                                const rowTextColor = settings.darkMode ? '#ffffff' : getTextColor(index % 2 === 0 ? (theme.cardBg || theme.background) : theme.accent);
                                                 return ( 
-                                                    <tr key={task.id} 
-                                                        onMouseEnter={() => { if(isNew) updateTask(task.id, 'isNew', false); }}
-                                                        draggable="true" 
-                                                        onDragStart={(e) => handleDragStart(e, task)} 
-                                                        onDragEnd={handleDragEnd} 
-                                                        onDragOver={(e) => handleDragOver(e, task)} 
-                                                        onDragLeave={handleDragLeave} 
-                                                        onDrop={(e) => handleDrop(e, task)} 
-                                                        style={isNew ? {} : { backgroundColor: currentRowBg, color: getTextColor(currentRowBg) }} 
-                                                        className={`border-b select-none ${isNew ? (settings.darkMode ? 'is-new-row-dark' : 'is-new-row') : 'cursor-move'} ${draggedTask && draggedTask.id === task.id ? 'opacity-50' : 'opacity-100'}`}> 
+                                                    <tr key={task.id} draggable="true" onDragStart={(e) => handleDragStart(e, task)} onDragEnd={handleDragEnd} onDragOver={(e) => handleDragOver(e, task)} onDragLeave={handleDragLeave} onDrop={(e) => handleDrop(e, task)} style={{ backgroundColor: currentRowBg, color: rowTextColor, transition: 'all 0.4s' }} className="border-b cursor-move hover:brightness-110"> 
                                                         {columnOrder.map((columnKey) => ( <td key={columnKey} style={{ minWidth: `${columnWidths[columnKey]}px`, width: `${columnWidths[columnKey]}px` }} className="px-4 py-3 align-top">{renderCell(columnKey, task)}</td> ))} 
                                                     </tr> 
                                                 ); 
@@ -671,7 +558,7 @@ function App() {
       
       {showAnalytics && ( 
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"> 
-            <div className="bg-white rounded-lg shadow-2xl p-8 max-w-[1400px] w-full max-h-[90vh] overflow-y-auto" style={{ backgroundColor: theme.cardBg || theme.background, fontFamily: '"Roboto", sans-serif' }}>
+            <div className="bg-white rounded-xl shadow-2xl p-8 max-w-[1400px] w-full max-h-[90vh] overflow-y-auto" style={{ backgroundColor: theme.cardBg || theme.background, fontFamily: '"Roboto", sans-serif' }}>
                 <div className="flex items-center justify-between mb-8 pb-4 border-b" style={{ borderColor: settings.darkMode ? '#4a4a4a' : '#e5e7eb' }}> 
                     <div> 
                         <h3 className="text-2xl font-bold" style={{ color: theme.textPrimary }}>Data Analytics</h3> 
@@ -682,10 +569,12 @@ function App() {
                 
                 <div className="flex flex-wrap justify-center gap-6">
                     
-                    <div id="widget-timeline" className="rounded-lg border shadow-sm p-6 w-full" style={{ borderColor: settings.darkMode ? '#4a4a4a' : '#e5e7eb', backgroundColor: theme.background }}> 
+                    {/* ENHANCED: VOLUME OVER TIME LINE GRAPH */}
+                    <div id="widget-timeline" className="rounded-xl border shadow-sm p-6 w-full" style={{ borderColor: settings.darkMode ? '#4a4a4a' : '#e5e7eb', backgroundColor: theme.background }}> 
                         <div className="flex flex-wrap items-center justify-between mb-6">
                             <h4 className="text-lg font-bold flex items-center gap-2" style={{ color: theme.textPrimary }}><LineChartIcon size={20} className="text-purple-500" /> Intake Volume Over Time</h4> 
                             
+                            {/* ENHANCED: DATE RANGE FILTERS & GROUPING OPTIONS WITH ANIMATED CALENDARS */}
                             <div className="flex gap-2 items-center flex-wrap mt-4 sm:mt-0 relative z-50">
                                 
                                 <span className="text-sm font-medium mr-1" style={{ color: theme.textSecondary }}>Filter:</span>
@@ -711,10 +600,8 @@ function App() {
                                     />
                                 </div>
                                 
-                                <button onClick={() => {setDateRange({start:'', end:''}); setChartPresets({...chartPresets, filterCol: '', filterVal: '', timelineType: 'line'});}} className="text-sm font-bold text-gray-500 hover:text-red-500 mx-2 transition-colors">Clear</button>
-
-                                <span className="text-sm font-medium ml-2 mr-1" style={{ color: theme.textSecondary }}>Category:</span>
-                                <select className="text-base border rounded-lg px-4 py-3 font-semibold cursor-pointer" style={{ backgroundColor: theme.cardBg, color: theme.textPrimary }} value={chartPresets.filterCol} onChange={(e) => setChartPresets({...chartPresets, filterCol: e.target.value, filterVal: ''})}>
+                                <span className="text-sm font-medium ml-4 mr-1" style={{ color: theme.textSecondary }}>Category:</span>
+                                <select className="text-base border rounded-xl px-4 py-3 font-semibold cursor-pointer" style={{ backgroundColor: theme.cardBg, color: theme.textPrimary }} value={chartPresets.filterCol} onChange={(e) => setChartPresets({...chartPresets, filterCol: e.target.value, filterVal: ''})}>
                                     <option value="">All Applicants</option>
                                     <option value="branchOfService">Branch of Service</option>
                                     <option value="currentStatus">Military Status</option>
@@ -722,7 +609,7 @@ function App() {
                                 </select>
 
                                 {chartPresets.filterCol && (
-                                    <select className="text-base border rounded-lg px-4 py-3 font-semibold cursor-pointer ml-2" style={{ backgroundColor: theme.cardBg, color: theme.textPrimary }} value={chartPresets.filterVal} onChange={(e) => setChartPresets({...chartPresets, filterVal: e.target.value})}>
+                                    <select className="text-base border rounded-xl px-4 py-3 font-semibold cursor-pointer ml-2" style={{ backgroundColor: theme.cardBg, color: theme.textPrimary }} value={chartPresets.filterVal} onChange={(e) => setChartPresets({...chartPresets, filterVal: e.target.value})}>
                                         <option value="">Select Value...</option>
                                         {(() => {
                                             const predefinedOptions = {
@@ -739,7 +626,7 @@ function App() {
                                 )}
                                 
                                 <span className="text-sm font-medium ml-4 mr-1" style={{ color: theme.textSecondary }}>Group:</span>
-                                <select className="text-base border rounded-lg px-4 py-3 font-semibold cursor-pointer" style={{ backgroundColor: theme.cardBg, color: theme.textPrimary }} value={chartPresets.timeGroup} onChange={(e) => setChartPresets({...chartPresets, timeGroup: e.target.value})}> 
+                                <select className="text-base border rounded-xl px-4 py-3 font-semibold cursor-pointer" style={{ backgroundColor: theme.cardBg, color: theme.textPrimary }} value={chartPresets.timeGroup} onChange={(e) => setChartPresets({...chartPresets, timeGroup: e.target.value})}> 
                                     <option value="day">Day</option> 
                                     <option value="week">Week</option>
                                     <option value="month">Month</option> 
@@ -747,13 +634,8 @@ function App() {
                                     <option value="year">Year</option> 
                                 </select>
 
-                                <span className="text-sm font-medium ml-4 mr-1" style={{ color: theme.textSecondary }}>Chart:</span>
-                                <select className="text-base border rounded-lg px-4 py-3 font-semibold cursor-pointer" style={{ backgroundColor: theme.cardBg, color: theme.textPrimary }} value={chartPresets.timelineType} onChange={(e) => setChartPresets({...chartPresets, timelineType: e.target.value})}> 
-                                    <option value="line">Line Chart</option> 
-                                    <option value="bar">Bar Chart</option> 
-                                </select>
-
-                                <button onClick={() => handleExportPNG('widget-timeline', 'Timeline-Chart')} className="p-3 hover:bg-gray-200 rounded-lg text-blue-500 ml-2 transition-colors" title="Export PNG"><Download size={24}/></button>
+                                <button onClick={() => {setDateRange({start:'', end:''}); setChartPresets({...chartPresets, filterCol: '', filterVal: ''});}} className="text-sm font-bold text-gray-500 hover:text-red-500 ml-3 transition-colors">Clear</button>
+                                <button onClick={() => handleExportPNG('widget-timeline', 'Timeline-Chart')} className="p-3 hover:bg-gray-200 rounded-xl text-blue-500 ml-2 transition-colors" title="Export PNG"><Download size={24}/></button>
                             </div>
                         </div>
                         {(() => { 
@@ -761,16 +643,17 @@ function App() {
                             tasks.forEach(t => {
                                 if (!t.timestamp) return;
                                 
+                                // Category / Column Value Filter logic
                                 if (chartPresets.filterCol && chartPresets.filterVal) {
                                     if (t[chartPresets.filterCol] !== chartPresets.filterVal) return;
                                 }
 
-                                const taskDate = t.timestamp.substring(0, 10);
-                                if (dateRange.start && taskDate < dateRange.start) return;
-                                if (dateRange.end && taskDate > dateRange.end) return;
-
                                 const d = new Date(t.timestamp);
                                 if (isNaN(d.getTime())) return;
+
+                                // Date Range Filter logic
+                                if (dateRange.start && d < new Date(dateRange.start + 'T00:00:00')) return;
+                                if (dateRange.end && d > new Date(dateRange.end + 'T23:59:59')) return;
 
                                 let sortKey = ''; let displayKey = '';
                                 
@@ -806,158 +689,80 @@ function App() {
                             
                             const sortedData = {};
                             Object.keys(counts).sort().forEach(k => { sortedData[counts[k].label] = counts[k].count; });
-                            return chartPresets.timelineType === 'bar' ? <SimpleBarChart data={sortedData} theme={theme} /> : <SimpleLineChart data={sortedData} theme={theme} />; 
+                            return <SimpleLineChart data={sortedData} theme={theme} />; 
                         })()} 
                     </div>
 
-                    <div id="widget-followup" className="rounded-lg border shadow-sm p-6 flex-grow min-w-[320px] max-w-[500px]" style={{ borderColor: settings.darkMode ? '#4a4a4a' : '#e5e7eb', backgroundColor: theme.background }}> 
+                    <div id="widget-followup" className="rounded-xl border shadow-sm p-6 flex-grow min-w-[320px] max-w-[500px]" style={{ borderColor: settings.darkMode ? '#4a4a4a' : '#e5e7eb', backgroundColor: theme.background }}> 
                         <div className="flex items-center justify-between mb-6">
                             <h4 className="text-lg font-bold flex items-center gap-2" style={{ color: theme.textPrimary }}><PieChartIcon size={20} className="text-orange-500" /> Follow Up Required</h4> 
                             <div className="flex gap-2">
-                                <select className="text-base border rounded-lg px-4 py-3 font-semibold" style={{ backgroundColor: theme.cardBg, color: theme.textPrimary }} value={chartPresets.followUp} onChange={(e) => setChartPresets({...chartPresets, followUp: e.target.value})}> <option value="pie">Pie Chart</option> <option value="bar">Bar Chart</option> </select>
-                                <button onClick={() => handleExportPNG('widget-followup', 'FollowUp-Chart')} className="p-3 hover:bg-gray-200 rounded-lg text-blue-500 transition-colors" title="Export PNG"><Download size={24}/></button>
+                                <select className="text-base border rounded-xl px-4 py-3 font-semibold" style={{ backgroundColor: theme.cardBg, color: theme.textPrimary }} value={chartPresets.followUp} onChange={(e) => setChartPresets({...chartPresets, followUp: e.target.value})}> <option value="pie">Pie Chart</option> <option value="bar">Bar Chart</option> </select>
+                                <button onClick={() => handleExportPNG('widget-followup', 'FollowUp-Chart')} className="p-3 hover:bg-gray-200 rounded-xl text-blue-500 transition-colors" title="Export PNG"><Download size={24}/></button>
                             </div>
                         </div>
                         {(() => { const counts = tasks.reduce((acc, t) => { const s = t.followUpRequired || 'Pending'; acc[s] = (acc[s] || 0) + 1; return acc; }, {}); const chartColors = { 'Yes': theme.primary, 'No': theme.secondary, 'Pending': theme.accent }; return chartPresets.followUp === 'pie' ? <SimplePieChart data={counts} colors={chartColors} theme={theme} /> : <SimpleBarChart data={counts} theme={theme} />; })()} 
                     </div>
                     
-                    <div id="widget-branch" className="rounded-lg border shadow-sm p-6 flex-grow min-w-[320px] max-w-[500px]" style={{ borderColor: settings.darkMode ? '#4a4a4a' : '#e5e7eb', backgroundColor: theme.background }}> 
+                    <div id="widget-branch" className="rounded-xl border shadow-sm p-6 flex-grow min-w-[320px] max-w-[500px]" style={{ borderColor: settings.darkMode ? '#4a4a4a' : '#e5e7eb', backgroundColor: theme.background }}> 
                         <div className="flex items-center justify-between mb-6">
                             <h4 className="text-lg font-bold flex items-center gap-2" style={{ color: theme.textPrimary }}><PieChartIcon size={20} className="text-blue-500" /> Branch of Service</h4> 
                             <div className="flex gap-2">
-                                <select className="text-base border rounded-lg px-4 py-3 font-semibold" style={{ backgroundColor: theme.cardBg, color: theme.textPrimary }} value={chartPresets.branch} onChange={(e) => setChartPresets({...chartPresets, branch: e.target.value})}> <option value="pie">Pie Chart</option> <option value="bar">Bar Chart</option> </select>
-                                <button onClick={() => handleExportPNG('widget-branch', 'Branch-Chart')} className="p-3 hover:bg-gray-200 rounded-lg text-blue-500 transition-colors" title="Export PNG"><Download size={24}/></button>
+                                <select className="text-base border rounded-xl px-4 py-3 font-semibold" style={{ backgroundColor: theme.cardBg, color: theme.textPrimary }} value={chartPresets.branch} onChange={(e) => setChartPresets({...chartPresets, branch: e.target.value})}> <option value="pie">Pie Chart</option> <option value="bar">Bar Chart</option> </select>
+                                <button onClick={() => handleExportPNG('widget-branch', 'Branch-Chart')} className="p-3 hover:bg-gray-200 rounded-xl text-blue-500 transition-colors" title="Export PNG"><Download size={24}/></button>
                             </div>
                         </div>
                         {(() => { const counts = tasks.reduce((acc, t) => { const b = t.branchOfService || 'Unspecified'; acc[b] = (acc[b] || 0) + 1; return acc; }, {}); return chartPresets.branch === 'pie' ? <SimplePieChart data={counts} colors={branchColors} theme={theme} /> : <SimpleBarChart data={counts} theme={theme} />; })()} 
                     </div>
 
-                    <div id="widget-status" className="rounded-lg border shadow-sm p-6 flex-grow min-w-[320px] max-w-[500px]" style={{ borderColor: settings.darkMode ? '#4a4a4a' : '#e5e7eb', backgroundColor: theme.background }}> 
+                    <div id="widget-status" className="rounded-xl border shadow-sm p-6 flex-grow min-w-[320px] max-w-[500px]" style={{ borderColor: settings.darkMode ? '#4a4a4a' : '#e5e7eb', backgroundColor: theme.background }}> 
                         <div className="flex items-center justify-between mb-6">
                             <h4 className="text-lg font-bold flex items-center gap-2" style={{ color: theme.textPrimary }}><PieChartIcon size={20} className="text-teal-500" /> Military Status</h4> 
                             <div className="flex gap-2">
-                                <select className="text-base border rounded-lg px-4 py-3 font-semibold" style={{ backgroundColor: theme.cardBg, color: theme.textPrimary }} value={chartPresets.status} onChange={(e) => setChartPresets({...chartPresets, status: e.target.value})}> <option value="pie">Pie Chart</option> <option value="bar">Bar Chart</option> </select>
-                                <button onClick={() => handleExportPNG('widget-status', 'Status-Chart')} className="p-3 hover:bg-gray-200 rounded-lg text-blue-500 transition-colors" title="Export PNG"><Download size={24}/></button>
+                                <select className="text-base border rounded-xl px-4 py-3 font-semibold" style={{ backgroundColor: theme.cardBg, color: theme.textPrimary }} value={chartPresets.status} onChange={(e) => setChartPresets({...chartPresets, status: e.target.value})}> <option value="pie">Pie Chart</option> <option value="bar">Bar Chart</option> </select>
+                                <button onClick={() => handleExportPNG('widget-status', 'Status-Chart')} className="p-3 hover:bg-gray-200 rounded-xl text-blue-500 transition-colors" title="Export PNG"><Download size={24}/></button>
                             </div>
                         </div>
                         {(() => { const counts = tasks.reduce((acc, t) => { const b = t.currentStatus || 'Unspecified'; acc[b] = (acc[b] || 0) + 1; return acc; }, {}); return chartPresets.status === 'pie' ? <SimplePieChart data={counts} theme={theme} /> : <SimpleBarChart data={counts} theme={theme} />; })()} 
                     </div>
 
-                    <div id="widget-education" className="rounded-lg border shadow-sm p-6 flex-grow min-w-[320px] max-w-[500px]" style={{ borderColor: settings.darkMode ? '#4a4a4a' : '#e5e7eb', backgroundColor: theme.background }}> 
+                    <div id="widget-education" className="rounded-xl border shadow-sm p-6 flex-grow min-w-[320px] max-w-[500px]" style={{ borderColor: settings.darkMode ? '#4a4a4a' : '#e5e7eb', backgroundColor: theme.background }}> 
                         <div className="flex items-center justify-between mb-6">
                             <h4 className="text-lg font-bold flex items-center gap-2" style={{ color: theme.textPrimary }}><PieChartIcon size={20} className="text-red-400" /> Education Level</h4> 
                             <div className="flex gap-2">
-                                <select className="text-base border rounded-lg px-4 py-3 font-semibold" style={{ backgroundColor: theme.cardBg, color: theme.textPrimary }} value={chartPresets.education} onChange={(e) => setChartPresets({...chartPresets, education: e.target.value})}> <option value="pie">Pie Chart</option> <option value="bar">Bar Chart</option> </select>
-                                <button onClick={() => handleExportPNG('widget-education', 'Education-Chart')} className="p-3 hover:bg-gray-200 rounded-lg text-blue-500 transition-colors" title="Export PNG"><Download size={24}/></button>
+                                <select className="text-base border rounded-xl px-4 py-3 font-semibold" style={{ backgroundColor: theme.cardBg, color: theme.textPrimary }} value={chartPresets.education} onChange={(e) => setChartPresets({...chartPresets, education: e.target.value})}> <option value="pie">Pie Chart</option> <option value="bar">Bar Chart</option> </select>
+                                <button onClick={() => handleExportPNG('widget-education', 'Education-Chart')} className="p-3 hover:bg-gray-200 rounded-xl text-blue-500 transition-colors" title="Export PNG"><Download size={24}/></button>
                             </div>
                         </div>
                         {(() => { const counts = tasks.reduce((acc, t) => { const b = t.educationLevel || 'Unspecified'; acc[b] = (acc[b] || 0) + 1; return acc; }, {}); return chartPresets.education === 'pie' ? <SimplePieChart data={counts} theme={theme} /> : <SimpleBarChart data={counts} theme={theme} />; })()} 
                     </div>
 
-                    <div id="widget-opps" className="rounded-lg border shadow-sm p-6 w-full" style={{ borderColor: settings.darkMode ? '#4a4a4a' : '#e5e7eb', backgroundColor: theme.background }}>
-                        <div className="flex items-center justify-between mb-6 border-b pb-4" style={{ borderColor: settings.darkMode ? '#4a4a4a' : '#e5e7eb' }}>
-                            <h4 className="text-xl font-bold flex items-center gap-2" style={{ color: theme.textPrimary }}>
-                                <BarChartIcon size={20} className="text-green-500" /> Training Opportunities
-                            </h4>
-                            <button onClick={() => window.print()} className="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg text-sm font-bold hover:bg-blue-100 transition-colors">
-                                Print Notes
-                            </button>
+                    <div id="widget-opps" className="rounded-xl border shadow-sm p-6 w-full" style={{ borderColor: settings.darkMode ? '#4a4a4a' : '#e5e7eb', backgroundColor: theme.background }}> 
+                        <div className="flex items-center justify-between mb-6">
+                            <h4 className="text-lg font-bold flex items-center gap-2" style={{ color: theme.textPrimary }}><BarChartIcon size={20} className="text-green-500" /> Desired Opportunities</h4> 
+                            <button onClick={() => handleExportPNG('widget-opps', 'Opportunities-Chart')} className="p-3 hover:bg-gray-200 rounded-xl text-blue-500 flex items-center gap-2 text-sm font-bold transition-colors"><Download size={24}/> Export PNG</button>
                         </div>
-                        
-                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 p-4 rounded-lg max-h-[600px] overflow-y-auto grid-flow-dense auto-rows-[120px]" style={{ backgroundColor: settings.darkMode ? '#3a3a3a' : '#f9fafb' }}>
-                            {(() => { 
-                                const oppCounts = {}; 
-                                tasks.forEach(t => { 
-                                    if (!t.opportunities) return; 
-                                    t.opportunities.split(',').forEach(opp => { 
-                                        let original = opp.trim(); 
-                                        if(!original) return;
-                                        // STRIP OUT ALL SPACES AND HYPHENS FOR COUNTING
-                                        let normalized = original.toLowerCase().replace(/[\s-]/g, ''); 
-                                        if(!oppCounts[normalized]) oppCounts[normalized] = { count: 0, label: original };
-                                        oppCounts[normalized].count += 1;
-                                    }); 
-                                }); 
-                                
-                                const sortedOpps = Object.values(oppCounts).sort((a, b) => b.count - a.count);
-                                const rainbowColors = ['bg-red-200', 'bg-orange-200', 'bg-yellow-200', 'bg-green-200', 'bg-blue-200', 'bg-indigo-200', 'bg-purple-200', 'bg-pink-200'];
-                                
-                                if (sortedOpps.length === 0) return <div className="text-gray-500 italic p-4 text-center col-span-full">No opportunities data available</div>;
-
-                                const maxCount = sortedOpps[0].count;
-
-                                return sortedOpps.map((opp, idx) => {
-                                    const colorClass = rainbowColors[idx % rainbowColors.length];
-                                    
-                                    let sizeClass = 'col-span-1 row-span-1 text-sm font-medium';
-                                    if (opp.count > 1) {
-                                        if (opp.count === maxCount && maxCount > 2) {
-                                            sizeClass = 'col-span-2 row-span-2 text-2xl font-extrabold'; 
-                                        } else {
-                                            sizeClass = 'col-span-2 row-span-1 text-lg font-bold'; 
-                                        }
-                                    }
-
-                                    return (
-                                        <div key={idx} className={`${colorClass} ${sizeClass} shadow-md hover:-translate-y-1 hover:shadow-lg transition-all flex items-center justify-center text-center p-4 border-t-8 border-black/10 relative overflow-hidden rounded-sm cursor-pointer`}>
-                                            <span className="relative z-10 text-gray-900 drop-shadow-sm leading-tight">{opp.label}</span>
-                                            <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full pointer-events-none z-0 select-none text-black/10" preserveAspectRatio="xMidYMid meet">
-                                                <text x="50%" y="50%" dominantBaseline="central" textAnchor="middle" fontWeight="900" fill="currentColor" fontSize="100">{opp.count}</text>
-                                            </svg>
-                                        </div>
-                                    )
-                                }); 
-                            })()}
-                        </div>
+                        {(() => { const counts = {}; tasks.forEach(t => { if (!t.opportunities) return; t.opportunities.split(',').forEach(opp => { let o = opp.trim(); if(!o) return; if(o.length > 25) o = o.substring(0, 25) + '...'; counts[o] = (counts[o] || 0) + 1; }); }); return <SimpleBarChart data={counts} theme={theme} />; })()} 
                     </div>
                 </div>
             </div> 
         </div> 
       )}
       
-      {showExportModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
-            <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full">
-                <h3 className="text-xl font-bold text-gray-900 mb-4">Export to CSV</h3>
-                <p className="text-sm text-gray-600 mb-4">Select the columns you want to include in your export:</p>
-                
-                <div className="max-h-64 overflow-y-auto mb-6 space-y-2 border p-3 rounded-lg">
-                    {columnOrder.filter(k => k !== 'drag' && k !== 'actions').map(colKey => (
-                        <label key={colKey} className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded cursor-pointer">
-                            <input type="checkbox" defaultChecked={true} className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500" value={colKey} id={`export-${colKey}`} />
-                            <span className="text-sm font-medium text-gray-700">{columns[colKey]?.label || colKey}</span>
-                        </label>
-                    ))}
-                </div>
-                
-                <div className="flex gap-3 justify-end">
-                    <button onClick={() => setShowExportModal(false)} className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium">Cancel</button>
-                    <button onClick={() => handleCustomExport()} className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium flex items-center gap-2">
-                        <Download size={16}/> Download CSV
-                    </button>
-                </div>
-            </div>
-        </div>
-      )}
-
-      {showSettings && ( <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"> <div className="bg-white rounded-lg shadow-xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto"> <div className="flex items-center justify-between mb-6"><h3 className="text-xl font-semibold text-gray-900">Settings</h3><button onClick={() => setShowSettings(false)} className="text-gray-400 hover:text-gray-600"><X size={24} /></button></div> <div className="grid grid-cols-1 md:grid-cols-2 gap-6"> <div className="space-y-4"> <div className="flex items-center justify-between p-5 bg-gray-50 rounded-lg border border-gray-200 shadow-sm"> <div> <h4 className="font-bold text-gray-900 mb-1 text-lg">Dark Mode</h4> <p className="text-sm text-gray-600">Switch dashboard to dark styling</p> </div> <label className="relative inline-flex items-center cursor-pointer"> <input type="checkbox" checked={settings.darkMode} onChange={(e) => setSettings({ ...settings, darkMode: e.target.checked })} className="sr-only peer" /> <div className="w-14 h-7 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-blue-600 shadow-inner"></div> </label> </div> <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"> <div> <h4 className="font-semibold text-gray-900 mb-1">Use Themes</h4> <p className="text-sm text-gray-600">Enable color themes for your dashboard</p> </div> <label className="relative inline-flex items-center cursor-pointer"> <input type="checkbox" checked={settings.useTheme} onChange={(e) => setSettings({ ...settings, useTheme: e.target.checked })} className="sr-only peer" /> <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div> </label> </div> {settings.useTheme && ( <div className="p-4 bg-gray-50 rounded-lg"> <div className="mb-3"><h4 className="font-semibold text-gray-900 mb-1">Color Theme</h4><p className="text-sm text-gray-600">Choose your dashboard color palette</p></div> <div className="space-y-2 max-h-64 overflow-y-auto pr-2"> {Object.keys(allThemes).filter(name => name !== 'None').map(themeName => { const themeColors = allThemes[themeName]; const isCustom = !!customThemes[themeName]; return ( <div key={themeName} className="relative"> <button onClick={() => setSettings({ ...settings, colorTheme: themeName })} className={`w-full flex items-center justify-between p-3 rounded-lg border-2 transition-all ${settings.colorTheme === themeName ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300 bg-white'}`}> <div className="flex items-center gap-3"> <div className="flex gap-1"><div className="w-6 h-6 rounded" style={{ backgroundColor: themeColors.primary }}></div><div className="w-6 h-6 rounded" style={{ backgroundColor: themeColors.secondary }}></div><div className="w-6 h-6 rounded" style={{ backgroundColor: themeColors.accent }}></div><div className="w-6 h-6 rounded" style={{ backgroundColor: themeColors.highlight }}></div></div> <span className="font-medium text-gray-900">{themeName}</span> {isCustom && <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-semibold">Custom</span>} </div> {isCustom && ( <div className="flex gap-1"> <button onClick={(e) => { e.stopPropagation(); setCustomTheme({...themeColors, name: themeName}); setEditingThemeName(themeName); setShowCustomThemeCreator(true); }} className="p-1.5 hover:bg-blue-100 rounded-lg transition-colors text-blue-600" title="Edit this theme"><Edit2 size={16} /></button> <button onClick={(e) => { e.stopPropagation(); if (confirm(`Delete custom theme "${themeName}"?`)) { const updatedThemes = { ...customThemes }; delete updatedThemes[themeName]; setCustomThemes(updatedThemes); if (settings.colorTheme === themeName) { setSettings({ ...settings, colorTheme: 'Ocean Bliss' }); } } }} className="p-1.5 hover:bg-red-100 rounded-lg transition-colors text-red-600" title="Delete this theme"><Trash2 size={16} /></button> </div> ) } </button> </div> ); }) } </div> <button onClick={() => { setShowCustomThemeCreator(!showCustomThemeCreator); if(showCustomThemeCreator) setEditingThemeName(null); }} className="w-full mt-3 py-2 px-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-lg font-medium transition-all flex items-center justify-center gap-2"><Plus size={18} /> {showCustomThemeCreator ? 'Hide Theme Creator' : 'Create Custom Theme'}</button> {showCustomThemeCreator && ( <div className="mt-4 p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg border-2 border-purple-300"> <div className="flex items-center justify-between mb-4"><h5 className="font-bold text-gray-900 flex items-center gap-2">{editingThemeName ? 'Edit Custom Theme' : 'Custom Theme Creator'}</h5></div>
+      {showSettings && ( <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"> <div className="bg-white rounded-lg shadow-xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto"> <div className="flex items-center justify-between mb-6"><h3 className="text-xl font-semibold text-gray-900">Settings</h3><button onClick={() => setShowSettings(false)} className="text-gray-400 hover:text-gray-600"><X size={24} /></button></div> <div className="grid grid-cols-1 md:grid-cols-2 gap-6"> <div className="space-y-4"> <div className="flex items-center justify-between p-5 bg-gray-50 rounded-xl border border-gray-200 shadow-sm"> <div> <h4 className="font-bold text-gray-900 mb-1 text-lg">Dark Mode</h4> <p className="text-sm text-gray-600">Switch dashboard to dark styling</p> </div> <label className="relative inline-flex items-center cursor-pointer"> <input type="checkbox" checked={settings.darkMode} onChange={(e) => setSettings({ ...settings, darkMode: e.target.checked })} className="sr-only peer" /> <div className="w-14 h-7 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-blue-600 shadow-inner"></div> </label> </div> <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"> <div> <h4 className="font-semibold text-gray-900 mb-1">Use Themes</h4> <p className="text-sm text-gray-600">Enable color themes for your dashboard</p> </div> <label className="relative inline-flex items-center cursor-pointer"> <input type="checkbox" checked={settings.useTheme} onChange={(e) => setSettings({ ...settings, useTheme: e.target.checked })} className="sr-only peer" /> <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div> </label> </div> {settings.useTheme && ( <div className="p-4 bg-gray-50 rounded-lg"> <div className="mb-3"><h4 className="font-semibold text-gray-900 mb-1">Color Theme</h4><p className="text-sm text-gray-600">Choose your dashboard color palette</p></div> <div className="space-y-2 max-h-64 overflow-y-auto pr-2"> {Object.keys(allThemes).filter(name => name !== 'None').map(themeName => { const themeColors = allThemes[themeName]; const isCustom = !!customThemes[themeName]; return ( <div key={themeName} className="relative"> <button onClick={() => setSettings({ ...settings, colorTheme: themeName })} className={`w-full flex items-center justify-between p-3 rounded-lg border-2 transition-all ${settings.colorTheme === themeName ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300 bg-white'}`}> <div className="flex items-center gap-3"> <div className="flex gap-1"><div className="w-6 h-6 rounded" style={{ backgroundColor: themeColors.primary }}></div><div className="w-6 h-6 rounded" style={{ backgroundColor: themeColors.secondary }}></div><div className="w-6 h-6 rounded" style={{ backgroundColor: themeColors.accent }}></div><div className="w-6 h-6 rounded" style={{ backgroundColor: themeColors.highlight }}></div></div> <span className="font-medium text-gray-900">{themeName}</span> {isCustom && <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-semibold">Custom</span>} </div> {isCustom && ( <button onClick={(e) => { e.stopPropagation(); if (confirm(`Delete custom theme "${themeName}"?`)) { const updatedThemes = { ...customThemes }; delete updatedThemes[themeName]; setCustomThemes(updatedThemes); if (settings.colorTheme === themeName) { setSettings({ ...settings, colorTheme: 'Ocean Bliss' }); } } }} className="p-1.5 hover:bg-red-100 rounded transition-colors text-red-600" title="Delete this theme"><Trash2 size={16} /></button> ) } </button> </div> ); }) } </div> <button onClick={() => setShowCustomThemeCreator(!showCustomThemeCreator)} className="w-full mt-3 py-2 px-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-lg font-medium transition-all flex items-center justify-center gap-2"><Plus size={18} /> {showCustomThemeCreator ? 'Hide Theme Creator' : 'Create Custom Theme'}</button> {showCustomThemeCreator && ( <div className="mt-4 p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg border-2 border-purple-300"> <div className="flex items-center justify-between mb-4"><h5 className="font-bold text-gray-900 flex items-center gap-2">Custom Theme Creator</h5></div>
                         
                         <div className="space-y-4"> 
-                            <div> <label className="block text-sm font-medium text-gray-700 mb-1">Theme Name</label> <input type="text" value={customTheme.name} onChange={(e) => setCustomTheme({ ...customTheme, name: e.target.value })} placeholder="My Awesome Theme" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" /> </div> <div className="grid grid-cols-2 gap-3"> <div><label className="block text-sm font-medium text-gray-700 mb-1">Background</label><input type="color" value={customTheme.background} onChange={(e) => setCustomTheme({ ...customTheme, background: e.target.value })} className="w-full h-10 rounded-lg border border-gray-300 cursor-pointer" /></div> <div><label className="block text-sm font-medium text-gray-700 mb-1">Card Background</label><input type="color" value={customTheme.cardBg} onChange={(e) => setCustomTheme({ ...customTheme, cardBg: e.target.value })} className="w-full h-10 rounded-lg border border-gray-300 cursor-pointer" /></div> <div><label className="block text-sm font-medium text-gray-700 mb-1">Primary</label><input type="color" value={customTheme.primary} onChange={(e) => setCustomTheme({ ...customTheme, primary: e.target.value })} className="w-full h-10 rounded-lg border border-gray-300 cursor-pointer" /></div> <div><label className="block text-sm font-medium text-gray-700 mb-1">Secondary</label><input type="color" value={customTheme.secondary} onChange={(e) => setCustomTheme({ ...customTheme, secondary: e.target.value })} className="w-full h-10 rounded-lg border border-gray-300 cursor-pointer" /></div> <div><label className="block text-sm font-medium text-gray-700 mb-1">Accent (INBOX)</label><input type="color" value={customTheme.accent} onChange={(e) => setCustomTheme({ ...customTheme, accent: e.target.value })} className="w-full h-10 rounded-lg border border-gray-300 cursor-pointer" /></div> <div><label className="block text-sm font-medium text-gray-700 mb-1">Highlight (COMPLETED)</label><input type="color" value={customTheme.highlight} onChange={(e) => setCustomTheme({ ...customTheme, highlight: e.target.value })} className="w-full h-10 rounded-lg border border-gray-300 cursor-pointer" /></div> </div> <button onClick={() => { if (!customTheme.name.trim()) { alert('Please enter a theme name!'); return; } const updatedThemes = { ...customThemes }; if (editingThemeName && editingThemeName !== customTheme.name) { delete updatedThemes[editingThemeName]; } updatedThemes[customTheme.name] = { ...customTheme }; setCustomThemes(updatedThemes); setSettings({ ...settings, colorTheme: customTheme.name }); setCustomTheme({ name: '', background: '#ffffff', cardBg: '#ffffff', primary: '#3b82f6', secondary: '#8b5cf6', accent: '#10b981', highlight: '#f59e0b', dark: '#1f2937', textPrimary: '#1f2937', textSecondary: '#6b7280' }); setEditingThemeName(null); setShowCustomThemeCreator(false); }} className="w-full py-2 px-4 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white rounded-lg font-bold transition-all">Save Theme</button> </div> </div> )} </div> ) } </div> <div className="space-y-4"> <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-200"> <h4 className="font-bold text-gray-900 mb-1 flex items-center gap-2">Data Export Management</h4> <p className="text-sm text-gray-600 mb-4">Download your entire dashboard data as a JSON backup or export to Excel as a CSV.</p> <div className="space-y-3"> <button onClick={exportJSON} className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium flex justify-center items-center gap-2 transition-colors"><Save size={16} /> Export JSON (Backup)</button> <button onClick={() => setShowExportModal(true)} className="w-full px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium flex justify-center items-center gap-2 transition-colors"><Download size={16} /> Export to Excel (CSV)</button> </div> </div> </div> </div> </div> </div> )}
-      
-      {recentlyDeleted && (
-        <div className="fixed bottom-4 right-4 bg-gray-900 text-white px-6 py-3 rounded-lg shadow-2xl flex items-center gap-4 z-50 animate-fade-in">
-            <span>Item deleted.</span>
-            <button 
-                onClick={() => {
-                    setTasks(prev => [...prev, recentlyDeleted]);
-                    setRecentlyDeleted(null);
-                }} 
-                className="text-blue-400 font-bold hover:text-blue-300 transition-colors">
-                Undo
-            </button>
-        </div>
-      )}
+                            
+                            {/* AI IMAGE THEME EXTRACTOR */}
+                            <div className="bg-white p-3 rounded-lg border border-purple-200 shadow-sm">
+                                <label className="block text-sm font-semibold text-purple-800 mb-2 flex items-center gap-1"><Image size={14}/> Extract Theme from Image</label>
+                                <input type="file" accept="image/*" onChange={handleImageThemeUpload} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100" />
+                                <p className="text-xs text-gray-500 mt-2">Upload a logo or photo and we'll automatically generate a color palette!</p>
+                            </div>
+
+                            <hr className="border-purple-200"/>
+
+                            <div> <label className="block text-sm font-medium text-gray-700 mb-1">Theme Name</label> <input type="text" value={customTheme.name} onChange={(e) => setCustomTheme({ ...customTheme, name: e.target.value })} placeholder="My Awesome Theme" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" /> </div> <div className="grid grid-cols-2 gap-3"> <div><label className="block text-sm font-medium text-gray-700 mb-1">Background</label><input type="color" value={customTheme.background} onChange={(e) => setCustomTheme({ ...customTheme, background: e.target.value })} className="w-full h-10 rounded border border-gray-300 cursor-pointer" /></div> <div><label className="block text-sm font-medium text-gray-700 mb-1">Card Background</label><input type="color" value={customTheme.cardBg} onChange={(e) => setCustomTheme({ ...customTheme, cardBg: e.target.value })} className="w-full h-10 rounded border border-gray-300 cursor-pointer" /></div> <div><label className="block text-sm font-medium text-gray-700 mb-1">Primary</label><input type="color" value={customTheme.primary} onChange={(e) => setCustomTheme({ ...customTheme, primary: e.target.value })} className="w-full h-10 rounded border border-gray-300 cursor-pointer" /></div> <div><label className="block text-sm font-medium text-gray-700 mb-1">Secondary</label><input type="color" value={customTheme.secondary} onChange={(e) => setCustomTheme({ ...customTheme, secondary: e.target.value })} className="w-full h-10 rounded border border-gray-300 cursor-pointer" /></div> <div><label className="block text-sm font-medium text-gray-700 mb-1">Accent (INBOX)</label><input type="color" value={customTheme.accent} onChange={(e) => setCustomTheme({ ...customTheme, accent: e.target.value })} className="w-full h-10 rounded border border-gray-300 cursor-pointer" /></div> <div><label className="block text-sm font-medium text-gray-700 mb-1">Highlight (COMPLETED)</label><input type="color" value={customTheme.highlight} onChange={(e) => setCustomTheme({ ...customTheme, highlight: e.target.value })} className="w-full h-10 rounded border border-gray-300 cursor-pointer" /></div> </div> <button onClick={() => { if (!customTheme.name.trim()) { alert('Please enter a theme name!'); return; } if (allThemes[customTheme.name]) { alert('A theme with this name already exists!'); return; } setCustomThemes(prev => ({ ...prev, [customTheme.name]: { ...customTheme } })); setSettings({ ...settings, colorTheme: customTheme.name }); setCustomTheme({ name: '', background: '#ffffff', cardBg: '#ffffff', primary: '#3b82f6', secondary: '#8b5cf6', accent: '#10b981', highlight: '#f59e0b', dark: '#1f2937', textPrimary: '#1f2937', textSecondary: '#6b7280' }); setShowCustomThemeCreator(false); }} className="w-full py-2 px-4 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white rounded-lg font-bold transition-all">Create & Save Theme</button> </div> </div> )} </div> ) } </div> <div className="space-y-4"> <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-200"> <h4 className="font-bold text-gray-900 mb-1 flex items-center gap-2">Data Export Management</h4> <p className="text-sm text-gray-600 mb-4">Download your entire dashboard data as a JSON backup or export to Excel as a CSV.</p> <div className="space-y-3"> <button onClick={exportJSON} className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium flex justify-center items-center gap-2 transition-colors"><Save size={16} /> Export JSON (Backup)</button> <button onClick={exportCSV} className="w-full px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium flex justify-center items-center gap-2 transition-colors"><Download size={16} /> Export to Excel (CSV)</button> </div> </div> </div> </div> </div> </div> )}
     </div>
   );
 }

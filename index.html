@@ -29,7 +29,7 @@ input[type="date"]::-webkit-datetime-edit { padding: 0.5em; }
 tbody tr td > div { color: inherit; }
 .animate-scale-in, .modal-backdrop { animation-timing-function: cubic-bezier(1.5, 0.1, 0.25, 1); animation-duration: 0.3s; }
 @keyframes fadeIn { 0% { opacity: 0; transform: translateY(-10px); } 100% { opacity: 1; transform: translateY(0); } }
-.animate-fade-in { animation: fadeIn 1s ease-out forwards; opacity: 0; }
+.animate-fade-in { animation: fadeIn 0.5s ease-out forwards; opacity: 0; }
 tbody tr.calendar-expanded { background: linear-gradient(to right, rgba(59, 130, 246, 0.08), rgba(59, 130, 246, 0.04)) !important; box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.3); }
 tbody tr.calendar-expanded td { padding-top: 2rem !important; padding-bottom: 2rem !important; vertical-align: top !important; transition: padding 2s cubic-bezier(0.34, 1.56, 0.64, 1); }
 tbody tr.calendar-expanded td > div { width: 100%; }
@@ -177,7 +177,7 @@ const SimpleLineChart = ({ data, theme }) => {
     if (entries.length === 0) return <div className="text-gray-500 italic p-4 text-center">No data available to chart</div>;
     
     const maxVal = Math.max(...entries.map(e => e[1]), 1);
-    const yMax = Math.ceil(maxVal * 1.1); // Dynamic scaling + 10% buffer
+    const yMax = Math.ceil(maxVal * 1.1); 
     
     const paddingLeft = 40;
     const paddingRight = 30;
@@ -267,7 +267,9 @@ function App() {
   const [chartPresets, setChartPresets] = useState({ followUp: 'pie', branch: 'pie', opportunities: 'bar', status: 'pie', education: 'pie', timeGroup: 'month', filterCol: '', filterVal: '' });
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
 
-  // Handle click outside to close dropdowns
+  const [recentlyDeleted, setRecentlyDeleted] = useState(null);
+  const [showExportModal, setShowExportModal] = useState(false);
+
   useEffect(() => {
       const handleClickOutside = (event) => {
           if (!event.target.closest('.dropdown-container')) {
@@ -373,7 +375,16 @@ function App() {
   };
 
   const updateTask = (id, field, value) => { setTasks(prev => prev.map(task => { if (task.id === id) { const updatedTask = {...task, [field]: value }; if (field === 'pipelineStatus') { if (value === 'Done') updatedTask.group = 'group2'; else if (task.pipelineStatus === 'Done' && value !== 'Done') updatedTask.group = 'group1'; } if (field === 'followUpRequired') { if (value === 'Yes') updatedTask.group = 'group2'; else if (value === 'No' && task.group === 'group2') updatedTask.group = 'group1'; } return updatedTask; } return task; })); };
-  const confirmDelete = (task) => { setDeleteConfirm(task); }; const deleteTask = (id) => { setTasks(prev => prev.filter(task => task.id !== id)); setDeleteConfirm(null); };
+  const confirmDelete = (task) => { setDeleteConfirm(task); }; 
+  const deleteTask = (id) => { 
+      const taskToDelete = tasks.find(t => t.id === id);
+      if (taskToDelete) {
+          setRecentlyDeleted(taskToDelete);
+          setTasks(prev => prev.filter(task => task.id !== id));
+          setDeleteConfirm(null);
+          setTimeout(() => setRecentlyDeleted(null), 7000); 
+      }
+  };
   const addTask = (groupId) => { setTasks(prev => [...prev, { id: Math.max(...(tasks.length ? tasks.map(t => t.id) : [0]), 0) + 1, group: groupId, branchOfService: 'Not started', followUpRequired: 'Pending', fullName: 'New User', timestamp: new Date().toISOString().split('T')[0] }]); };
   const handleAddColumn = () => { const name = prompt("Enter a name for the new column:"); if (!name || !name.trim()) return; const newKey = 'custom_' + Date.now(); setColumns(prev => ({ ...prev, [newKey]: { label: name.trim(), icon: 'none' } })); setColumnWidths(prev => ({ ...prev, [newKey]: 150 })); setColumnOrder(prev => { const newOrder = [...prev]; const actionIdx = newOrder.indexOf('actions'); if (actionIdx !== -1) { newOrder.splice(actionIdx, 0, newKey); } else { newOrder.push(newKey); } return newOrder; }); };
   
@@ -387,7 +398,32 @@ function App() {
   const parseCSV = (text) => { const result = []; let row = []; let inQuotes = false; let currentValue = ''; for (let i = 0; i < text.length; i++) { const char = text[i]; if (char === '"') { if (inQuotes && text[i+1] === '"') { currentValue += '"'; i++; } else { inQuotes = !inQuotes; } } else if (char === ',' && !inQuotes) { row.push(currentValue); currentValue = ''; } else if ((char === '\n' || char === '\r') && !inQuotes) { if (char === '\r' && text[i+1] === '\n') i++; row.push(currentValue); if (row.some(val => val.trim() !== '')) result.push(row); row = []; currentValue = ''; } else { currentValue += char; } } if (currentValue || row.length > 0) { row.push(currentValue); result.push(row); } if (result.length < 2) return []; const headers = result[0].map(h => h.trim()); return result.slice(1).map(rowArray => { const obj = {}; headers.forEach((h, idx) => { obj[h] = rowArray[idx] ? rowArray[idx].trim() : ''; }); return obj; }); };
   const handleFileLoad = (event) => { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (e) => { try { const content = e.target.result; const isCSV = file.name.toLowerCase().endsWith('.csv'); if (isCSV) { const parsedData = parseCSV(content); const newTasks = parsedData.map((row, index) => { const ts = formatToYYYYMMDD(row['Timestamp'] || new Date().toISOString().split('T')[0]); const etsDateStr = formatToYYYYMMDD(row[Object.keys(row).find(k => k.toLowerCase().includes('ets'))] || ''); const terminalLeaveStr = formatToYYYYMMDD(row[Object.keys(row).find(k => k.toLowerCase().includes('terminal leave'))] || ''); return { id: Math.max(...(tasks.length ? tasks.map(t => t.id) : [0]), 0) + index + 1, group: 'group1', timestamp: ts, fullName: row[Object.keys(row).find(k => k.toLowerCase().includes('name'))] || '', phone: row[Object.keys(row).find(k => k.toLowerCase().includes('phone'))] || '', email: row[Object.keys(row).find(k => k.toLowerCase().includes('email'))] || '', currentStatus: row[Object.keys(row).find(k => k.toLowerCase().includes('current status'))] || '', branchOfService: row[Object.keys(row).find(k => k.toLowerCase().includes('branch'))] || 'Not started', followUpRequired: 'Pending', agreeToContact: row[Object.keys(row).find(k => k.toLowerCase().includes('agree'))] || '', mos: row[Object.keys(row).find(k => k.toLowerCase().includes('mos'))] || '', payGrade: row[Object.keys(row).find(k => k.toLowerCase().includes('pay grade'))] || '', etsDate: etsDateStr, terminalLeave: terminalLeaveStr, location: row[Object.keys(row).find(k => k.toLowerCase().includes('city, state'))] || '', transportation: row[Object.keys(row).find(k => k.toLowerCase().includes('transportation'))] || '', opportunities: row[Object.keys(row).find(k => k.toLowerCase().includes('opportunities'))] || '', skills: row[Object.keys(row).find(k => k.toLowerCase().includes('skills'))] || '', areasOfInterest: row[Object.keys(row).find(k => k.toLowerCase().includes('areas'))] || '', availability: row[Object.keys(row).find(k => k.toLowerCase().includes('availability'))] || '', referralSource: row[Object.keys(row).find(k => k.toLowerCase().includes('hear about') || k.toLowerCase().includes('referral'))] || '' }; }); setTasks(prev => [...prev, ...newTasks]); alert(`CSV loaded successfully!\n\nImported ${newTasks.length} intake forms to your INBOX.`); } else { const loadedData = JSON.parse(content); if (loadedData.tasks && Array.isArray(loadedData.tasks)) { setTasks(loadedData.tasks); if (loadedData.columnWidths) setColumnWidths(loadedData.columnWidths); if (loadedData.columnOrder) setColumnOrder(loadedData.columnOrder); if (loadedData.settings) setSettings(loadedData.settings); if (loadedData.expandedGroups) setExpandedGroups(loadedData.expandedGroups); if (loadedData.columns) setColumns(loadedData.columns); if (loadedData.customThemes) setCustomThemes(loadedData.customThemes); alert('Dashboard backup data loaded successfully!'); } } } catch (error) { alert('Error loading file: ' + error.message); } }; reader.readAsText(file); event.target.value = ''; };
   const exportJSON = () => { const dataToSave = { tasks, columnWidths, columnOrder, settings, expandedGroups, columns, customThemes, savedAt: new Date().toISOString(), version: '6.0' }; const jsonString = JSON.stringify(dataToSave, null, 2); const now = new Date(); const filename = `IMPACT-BACKUP-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}.json`; const blob = new Blob([jsonString], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); };
-  const exportCSV = () => { if(tasks.length === 0) return alert('No data to export!'); const exportColumns = columnOrder.filter(k => k !== 'drag' && k !== 'actions'); const headers = exportColumns.map(k => columns[k]?.label || k); const csvRows = tasks.map(t => exportColumns.map(k => `"${(t[k] || '').replace(/"/g, '""')}"`).join(',')); const csvContent = [headers.join(','), ...csvRows].join('\n'); const now = new Date(); const filename = `IMPACT-Export-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}.csv`; const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); };
+  const handleCustomExport = () => {
+    const checkboxes = document.querySelectorAll('input[id^="export-"]:checked');
+    const selectedCols = Array.from(checkboxes).map(cb => cb.value);
+    
+    if(selectedCols.length === 0) return alert('Please select at least one column to export!');
+    if(tasks.length === 0) return alert('No data to export!');
+    
+    const headers = selectedCols.map(k => columns[k]?.label || k);
+    const csvRows = tasks.map(t => selectedCols.map(k => `"${(t[k] || '').replace(/"/g, '""')}"`).join(','));
+    const csvContent = [headers.join(','), ...csvRows].join('\n');
+    
+    const now = new Date();
+    const filename = `IMPACT-Export-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}.csv`;
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    setShowExportModal(false);
+  };
   
   useEffect(() => { const unsubscribe = auth.onAuthStateChanged((currentUser) => { setUser(currentUser); setLoading(false); }); return () => unsubscribe(); }, []);
   
@@ -500,7 +536,7 @@ function App() {
             </div>
         </div>
 
-        <div ref={mainScrollRef} onScroll={handleMainScroll} className="flex-1 hide-native-scroll overflow-auto w-full pb-4">
+        <div ref={mainScrollRef} onScroll={handleMainScroll} className="flex-1 hide-native-scroll overflow-auto w-full pb-4 relative">
             <div style={{ minWidth: `${totalTableWidth}px` }}>
                 {Object.entries(groups).map(([groupId, groupData]) => { 
                     const groupTasks = filteredTasks.filter(t => t.group === groupId); 
@@ -510,7 +546,7 @@ function App() {
                             {expandedGroups[groupId] && ( 
                                 <div className="pb-6 min-h-[300px]"> 
                                     <table className="min-w-full" style={{ width: '100%', tableLayout: 'fixed' }}>
-                                        <thead> 
+                                        <thead className="sticky top-0 z-30 shadow-sm"> 
                                             <tr style={{ backgroundColor: settings.darkMode ? '#3a3a3a' : '#f9fafb', borderBottom: `1px solid ${settings.darkMode ? '#4a4a4a' : '#e5e7eb'}` }}> 
                                                 {columnOrder.map((columnKey) => ( 
                                                     <th key={columnKey} style={{ minWidth: `${columnWidths[columnKey]}px`, width: `${columnWidths[columnKey]}px` }} className={`px-4 py-3 text-left text-sm font-semibold relative group/th select-none transition-all ${dragOverColumn === columnKey ? 'shadow-[inset_4px_0_0_0_#3b82f6] bg-blue-50/50' : ''}`} draggable={columnKey !== 'actions' && columnKey !== 'drag' && editingHeader !== columnKey} onDragStart={(e) => handleColumnDragStart(e, columnKey)} onDragOver={(e) => handleColumnDragOver(e, columnKey)} onDragLeave={handleColumnDragLeave} onDrop={(e) => handleColumnDrop(e, columnKey)}> 
@@ -580,12 +616,10 @@ function App() {
                 
                 <div className="flex flex-wrap justify-center gap-6">
                     
-                    {/* ENHANCED: VOLUME OVER TIME LINE GRAPH */}
                     <div id="widget-timeline" className="rounded-lg border shadow-sm p-6 w-full" style={{ borderColor: settings.darkMode ? '#4a4a4a' : '#e5e7eb', backgroundColor: theme.background }}> 
                         <div className="flex flex-wrap items-center justify-between mb-6">
                             <h4 className="text-lg font-bold flex items-center gap-2" style={{ color: theme.textPrimary }}><LineChartIcon size={20} className="text-purple-500" /> Intake Volume Over Time</h4> 
                             
-                            {/* ENHANCED: DATE RANGE FILTERS & GROUPING OPTIONS WITH ANIMATED CALENDARS */}
                             <div className="flex gap-2 items-center flex-wrap mt-4 sm:mt-0 relative z-50">
                                 
                                 <span className="text-sm font-medium mr-1" style={{ color: theme.textSecondary }}>Filter:</span>
@@ -654,7 +688,6 @@ function App() {
                             tasks.forEach(t => {
                                 if (!t.timestamp) return;
                                 
-                                // Category / Column Value Filter logic
                                 if (chartPresets.filterCol && chartPresets.filterVal) {
                                     if (t[chartPresets.filterCol] !== chartPresets.filterVal) return;
                                 }
@@ -662,7 +695,6 @@ function App() {
                                 const d = new Date(t.timestamp);
                                 if (isNaN(d.getTime())) return;
 
-                                // Date Range Filter logic
                                 if (dateRange.start && d < new Date(dateRange.start + 'T00:00:00')) return;
                                 if (dateRange.end && d > new Date(dateRange.end + 'T23:59:59')) return;
 
@@ -748,22 +780,89 @@ function App() {
                         {(() => { const counts = tasks.reduce((acc, t) => { const b = t.educationLevel || 'Unspecified'; acc[b] = (acc[b] || 0) + 1; return acc; }, {}); return chartPresets.education === 'pie' ? <SimplePieChart data={counts} theme={theme} /> : <SimpleBarChart data={counts} theme={theme} />; })()} 
                     </div>
 
-                    <div id="widget-opps" className="rounded-lg border shadow-sm p-6 w-full" style={{ borderColor: settings.darkMode ? '#4a4a4a' : '#e5e7eb', backgroundColor: theme.background }}> 
-                        <div className="flex items-center justify-between mb-6">
-                            <h4 className="text-lg font-bold flex items-center gap-2" style={{ color: theme.textPrimary }}><BarChartIcon size={20} className="text-green-500" /> Desired Opportunities</h4> 
-                            <button onClick={() => handleExportPNG('widget-opps', 'Opportunities-Chart')} className="p-3 hover:bg-gray-200 rounded-lg text-blue-500 flex items-center gap-2 text-sm font-bold transition-colors"><Download size={24}/> Export PNG</button>
+                    <div id="widget-opps" className="rounded-lg border shadow-sm p-6 w-full" style={{ borderColor: settings.darkMode ? '#4a4a4a' : '#e5e7eb', backgroundColor: theme.background }}>
+                        <div className="flex items-center justify-between mb-6 border-b pb-4" style={{ borderColor: settings.darkMode ? '#4a4a4a' : '#e5e7eb' }}>
+                            <h4 className="text-xl font-bold flex items-center gap-2" style={{ color: theme.textPrimary }}>
+                                <BarChartIcon size={20} className="text-green-500" /> Training Opportunities
+                            </h4>
+                            <button onClick={() => window.print()} className="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg text-sm font-bold hover:bg-blue-100 transition-colors">
+                                Print Notes
+                            </button>
                         </div>
-                        {(() => { const counts = {}; tasks.forEach(t => { if (!t.opportunities) return; t.opportunities.split(',').forEach(opp => { let o = opp.trim(); if(!o) return; if(o.length > 25) o = o.substring(0, 25) + '...'; counts[o] = (counts[o] || 0) + 1; }); }); return <SimpleBarChart data={counts} theme={theme} />; })()} 
+                        
+                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6 p-4 rounded-lg max-h-[600px] overflow-y-auto" style={{ backgroundColor: settings.darkMode ? '#3a3a3a' : '#f9fafb' }}>
+                            {(() => { 
+                                const notes = []; 
+                                tasks.forEach(t => { 
+                                    if (!t.opportunities) return; 
+                                    t.opportunities.split(',').forEach(opp => { 
+                                        let o = opp.trim(); 
+                                        if(o) notes.push(o); 
+                                    }); 
+                                }); 
+                                
+                                const postItColors = ['bg-yellow-200', 'bg-pink-200', 'bg-blue-200', 'bg-green-200', 'bg-orange-200'];
+                                
+                                return notes.map((note, idx) => {
+                                    const colorClass = postItColors[idx % postItColors.length];
+                                    const rotateClass = idx % 2 === 0 ? 'rotate-1' : '-rotate-1';
+                                    return (
+                                        <div key={idx} className={`${colorClass} ${rotateClass} p-4 shadow-md hover:rotate-0 transition-transform text-gray-800 font-medium text-sm h-32 flex items-center justify-center text-center border-t-8 border-black/5`}>
+                                            {note}
+                                        </div>
+                                    )
+                                }); 
+                            })()}
+                        </div>
                     </div>
                 </div>
             </div> 
         </div> 
       )}
       
+      {showExportModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
+            <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full">
+                <h3 className="text-xl font-bold text-gray-900 mb-4">Export to CSV</h3>
+                <p className="text-sm text-gray-600 mb-4">Select the columns you want to include in your export:</p>
+                
+                <div className="max-h-64 overflow-y-auto mb-6 space-y-2 border p-3 rounded-lg">
+                    {columnOrder.filter(k => k !== 'drag' && k !== 'actions').map(colKey => (
+                        <label key={colKey} className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded cursor-pointer">
+                            <input type="checkbox" defaultChecked={true} className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500" value={colKey} id={`export-${colKey}`} />
+                            <span className="text-sm font-medium text-gray-700">{columns[colKey]?.label || colKey}</span>
+                        </label>
+                    ))}
+                </div>
+                
+                <div className="flex gap-3 justify-end">
+                    <button onClick={() => setShowExportModal(false)} className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium">Cancel</button>
+                    <button onClick={() => handleCustomExport()} className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium flex items-center gap-2">
+                        <Download size={16}/> Download CSV
+                    </button>
+                </div>
+            </div>
+        </div>
+      )}
+
       {showSettings && ( <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"> <div className="bg-white rounded-lg shadow-xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto"> <div className="flex items-center justify-between mb-6"><h3 className="text-xl font-semibold text-gray-900">Settings</h3><button onClick={() => setShowSettings(false)} className="text-gray-400 hover:text-gray-600"><X size={24} /></button></div> <div className="grid grid-cols-1 md:grid-cols-2 gap-6"> <div className="space-y-4"> <div className="flex items-center justify-between p-5 bg-gray-50 rounded-lg border border-gray-200 shadow-sm"> <div> <h4 className="font-bold text-gray-900 mb-1 text-lg">Dark Mode</h4> <p className="text-sm text-gray-600">Switch dashboard to dark styling</p> </div> <label className="relative inline-flex items-center cursor-pointer"> <input type="checkbox" checked={settings.darkMode} onChange={(e) => setSettings({ ...settings, darkMode: e.target.checked })} className="sr-only peer" /> <div className="w-14 h-7 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-blue-600 shadow-inner"></div> </label> </div> <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"> <div> <h4 className="font-semibold text-gray-900 mb-1">Use Themes</h4> <p className="text-sm text-gray-600">Enable color themes for your dashboard</p> </div> <label className="relative inline-flex items-center cursor-pointer"> <input type="checkbox" checked={settings.useTheme} onChange={(e) => setSettings({ ...settings, useTheme: e.target.checked })} className="sr-only peer" /> <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div> </label> </div> {settings.useTheme && ( <div className="p-4 bg-gray-50 rounded-lg"> <div className="mb-3"><h4 className="font-semibold text-gray-900 mb-1">Color Theme</h4><p className="text-sm text-gray-600">Choose your dashboard color palette</p></div> <div className="space-y-2 max-h-64 overflow-y-auto pr-2"> {Object.keys(allThemes).filter(name => name !== 'None').map(themeName => { const themeColors = allThemes[themeName]; const isCustom = !!customThemes[themeName]; return ( <div key={themeName} className="relative"> <button onClick={() => setSettings({ ...settings, colorTheme: themeName })} className={`w-full flex items-center justify-between p-3 rounded-lg border-2 transition-all ${settings.colorTheme === themeName ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300 bg-white'}`}> <div className="flex items-center gap-3"> <div className="flex gap-1"><div className="w-6 h-6 rounded" style={{ backgroundColor: themeColors.primary }}></div><div className="w-6 h-6 rounded" style={{ backgroundColor: themeColors.secondary }}></div><div className="w-6 h-6 rounded" style={{ backgroundColor: themeColors.accent }}></div><div className="w-6 h-6 rounded" style={{ backgroundColor: themeColors.highlight }}></div></div> <span className="font-medium text-gray-900">{themeName}</span> {isCustom && <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-semibold">Custom</span>} </div> {isCustom && ( <button onClick={(e) => { e.stopPropagation(); if (confirm(`Delete custom theme "${themeName}"?`)) { const updatedThemes = { ...customThemes }; delete updatedThemes[themeName]; setCustomThemes(updatedThemes); if (settings.colorTheme === themeName) { setSettings({ ...settings, colorTheme: 'Ocean Bliss' }); } } }} className="p-1.5 hover:bg-red-100 rounded-lg transition-colors text-red-600" title="Delete this theme"><Trash2 size={16} /></button> ) } </button> </div> ); }) } </div> <button onClick={() => setShowCustomThemeCreator(!showCustomThemeCreator)} className="w-full mt-3 py-2 px-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-lg font-medium transition-all flex items-center justify-center gap-2"><Plus size={18} /> {showCustomThemeCreator ? 'Hide Theme Creator' : 'Create Custom Theme'}</button> {showCustomThemeCreator && ( <div className="mt-4 p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg border-2 border-purple-300"> <div className="flex items-center justify-between mb-4"><h5 className="font-bold text-gray-900 flex items-center gap-2">Custom Theme Creator</h5></div>
                         
                         <div className="space-y-4"> 
-                            <div> <label className="block text-sm font-medium text-gray-700 mb-1">Theme Name</label> <input type="text" value={customTheme.name} onChange={(e) => setCustomTheme({ ...customTheme, name: e.target.value })} placeholder="My Awesome Theme" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" /> </div> <div className="grid grid-cols-2 gap-3"> <div><label className="block text-sm font-medium text-gray-700 mb-1">Background</label><input type="color" value={customTheme.background} onChange={(e) => setCustomTheme({ ...customTheme, background: e.target.value })} className="w-full h-10 rounded-lg border border-gray-300 cursor-pointer" /></div> <div><label className="block text-sm font-medium text-gray-700 mb-1">Card Background</label><input type="color" value={customTheme.cardBg} onChange={(e) => setCustomTheme({ ...customTheme, cardBg: e.target.value })} className="w-full h-10 rounded-lg border border-gray-300 cursor-pointer" /></div> <div><label className="block text-sm font-medium text-gray-700 mb-1">Primary</label><input type="color" value={customTheme.primary} onChange={(e) => setCustomTheme({ ...customTheme, primary: e.target.value })} className="w-full h-10 rounded-lg border border-gray-300 cursor-pointer" /></div> <div><label className="block text-sm font-medium text-gray-700 mb-1">Secondary</label><input type="color" value={customTheme.secondary} onChange={(e) => setCustomTheme({ ...customTheme, secondary: e.target.value })} className="w-full h-10 rounded-lg border border-gray-300 cursor-pointer" /></div> <div><label className="block text-sm font-medium text-gray-700 mb-1">Accent (INBOX)</label><input type="color" value={customTheme.accent} onChange={(e) => setCustomTheme({ ...customTheme, accent: e.target.value })} className="w-full h-10 rounded-lg border border-gray-300 cursor-pointer" /></div> <div><label className="block text-sm font-medium text-gray-700 mb-1">Highlight (COMPLETED)</label><input type="color" value={customTheme.highlight} onChange={(e) => setCustomTheme({ ...customTheme, highlight: e.target.value })} className="w-full h-10 rounded-lg border border-gray-300 cursor-pointer" /></div> </div> <button onClick={() => { if (!customTheme.name.trim()) { alert('Please enter a theme name!'); return; } setCustomThemes(prev => ({ ...prev, [customTheme.name]: { ...customTheme } })); setSettings({ ...settings, colorTheme: customTheme.name }); setCustomTheme({ name: '', background: '#ffffff', cardBg: '#ffffff', primary: '#3b82f6', secondary: '#8b5cf6', accent: '#10b981', highlight: '#f59e0b', dark: '#1f2937', textPrimary: '#1f2937', textSecondary: '#6b7280' }); setShowCustomThemeCreator(false); }} className="w-full py-2 px-4 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white rounded-lg font-bold transition-all">Save Theme</button> </div> </div> )} </div> ) } </div> <div className="space-y-4"> <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-200"> <h4 className="font-bold text-gray-900 mb-1 flex items-center gap-2">Data Export Management</h4> <p className="text-sm text-gray-600 mb-4">Download your entire dashboard data as a JSON backup or export to Excel as a CSV.</p> <div className="space-y-3"> <button onClick={exportJSON} className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium flex justify-center items-center gap-2 transition-colors"><Save size={16} /> Export JSON (Backup)</button> <button onClick={exportCSV} className="w-full px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium flex justify-center items-center gap-2 transition-colors"><Download size={16} /> Export to Excel (CSV)</button> </div> </div> </div> </div> </div> </div> )}
+                            <div> <label className="block text-sm font-medium text-gray-700 mb-1">Theme Name</label> <input type="text" value={customTheme.name} onChange={(e) => setCustomTheme({ ...customTheme, name: e.target.value })} placeholder="My Awesome Theme" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" /> </div> <div className="grid grid-cols-2 gap-3"> <div><label className="block text-sm font-medium text-gray-700 mb-1">Background</label><input type="color" value={customTheme.background} onChange={(e) => setCustomTheme({ ...customTheme, background: e.target.value })} className="w-full h-10 rounded-lg border border-gray-300 cursor-pointer" /></div> <div><label className="block text-sm font-medium text-gray-700 mb-1">Card Background</label><input type="color" value={customTheme.cardBg} onChange={(e) => setCustomTheme({ ...customTheme, cardBg: e.target.value })} className="w-full h-10 rounded-lg border border-gray-300 cursor-pointer" /></div> <div><label className="block text-sm font-medium text-gray-700 mb-1">Primary</label><input type="color" value={customTheme.primary} onChange={(e) => setCustomTheme({ ...customTheme, primary: e.target.value })} className="w-full h-10 rounded-lg border border-gray-300 cursor-pointer" /></div> <div><label className="block text-sm font-medium text-gray-700 mb-1">Secondary</label><input type="color" value={customTheme.secondary} onChange={(e) => setCustomTheme({ ...customTheme, secondary: e.target.value })} className="w-full h-10 rounded-lg border border-gray-300 cursor-pointer" /></div> <div><label className="block text-sm font-medium text-gray-700 mb-1">Accent (INBOX)</label><input type="color" value={customTheme.accent} onChange={(e) => setCustomTheme({ ...customTheme, accent: e.target.value })} className="w-full h-10 rounded-lg border border-gray-300 cursor-pointer" /></div> <div><label className="block text-sm font-medium text-gray-700 mb-1">Highlight (COMPLETED)</label><input type="color" value={customTheme.highlight} onChange={(e) => setCustomTheme({ ...customTheme, highlight: e.target.value })} className="w-full h-10 rounded-lg border border-gray-300 cursor-pointer" /></div> </div> <button onClick={() => { if (!customTheme.name.trim()) { alert('Please enter a theme name!'); return; } setCustomThemes(prev => ({ ...prev, [customTheme.name]: { ...customTheme } })); setSettings({ ...settings, colorTheme: customTheme.name }); setCustomTheme({ name: '', background: '#ffffff', cardBg: '#ffffff', primary: '#3b82f6', secondary: '#8b5cf6', accent: '#10b981', highlight: '#f59e0b', dark: '#1f2937', textPrimary: '#1f2937', textSecondary: '#6b7280' }); setShowCustomThemeCreator(false); }} className="w-full py-2 px-4 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white rounded-lg font-bold transition-all">Save Theme</button> </div> </div> )} </div> ) } </div> <div className="space-y-4"> <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-200"> <h4 className="font-bold text-gray-900 mb-1 flex items-center gap-2">Data Export Management</h4> <p className="text-sm text-gray-600 mb-4">Download your entire dashboard data as a JSON backup or export to Excel as a CSV.</p> <div className="space-y-3"> <button onClick={exportJSON} className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium flex justify-center items-center gap-2 transition-colors"><Save size={16} /> Export JSON (Backup)</button> <button onClick={() => setShowExportModal(true)} className="w-full px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium flex justify-center items-center gap-2 transition-colors"><Download size={16} /> Export to Excel (CSV)</button> </div> </div> </div> </div> </div> </div> )}
+      
+      {recentlyDeleted && (
+        <div className="fixed bottom-4 right-4 bg-gray-900 text-white px-6 py-3 rounded-lg shadow-2xl flex items-center gap-4 z-50 animate-fade-in">
+            <span>Item deleted.</span>
+            <button 
+                onClick={() => {
+                    setTasks(prev => [...prev, recentlyDeleted]);
+                    setRecentlyDeleted(null);
+                }} 
+                className="text-blue-400 font-bold hover:text-blue-300 transition-colors">
+                Undo
+            </button>
+        </div>
+      )}
     </div>
   );
 }

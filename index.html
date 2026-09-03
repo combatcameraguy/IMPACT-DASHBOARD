@@ -345,21 +345,34 @@ function App() {
       document.body.style.cursor = 'grabbing';
       document.body.style.userSelect = 'none';
 
+      let lastX = e.clientX;
+      let lastTime = performance.now();
+      let velocity = 0;
+
       const moveFader = (moveEvent) => {
           if (!faderTrackRef.current || !mainScrollRef.current) return;
+          
+          const now = performance.now();
+          const dt = now - lastTime;
+          if (dt > 0) {
+              velocity = (moveEvent.clientX - lastX) / dt;
+          }
+          lastX = moveEvent.clientX;
+          lastTime = now;
+
           const trackRect = faderTrackRef.current.getBoundingClientRect();
           const { scrollWidth, clientWidth } = mainScrollRef.current;
           const maxTableScroll = scrollWidth - clientWidth;
           
-          const trackWidth = trackRect.width;
-          const thumbPixels = faderState.widthRatio * trackWidth;
-          const maxThumbTravel = trackWidth - thumbPixels;
+          const widthRatio = Math.min(1, clientWidth / (scrollWidth || 1));
+          const thumbPixels = widthRatio * trackRect.width;
+          const maxThumbTravel = trackRect.width - thumbPixels;
           
           let px = moveEvent.clientX - trackRect.left;
           let percent = maxThumbTravel > 0 ? (px - (thumbPixels / 2)) / maxThumbTravel : 0;
           percent = Math.max(0, Math.min(1, percent));
 
-          setFaderState(prev => ({ ...prev, percent }));
+          setFaderState(prev => ({ ...prev, percent, widthRatio }));
           mainScrollRef.current.scrollLeft = percent * maxTableScroll;
       };
 
@@ -370,6 +383,33 @@ function App() {
           document.body.style.userSelect = '';
           window.removeEventListener('mousemove', moveFader);
           window.removeEventListener('mouseup', stopFader);
+
+          let currentVelocity = velocity;
+          const friction = 0.92; 
+
+          const glide = () => {
+              if (isDraggingFader.current || Math.abs(currentVelocity) < 0.02) return;
+              if (!mainScrollRef.current || !faderTrackRef.current) return;
+
+              const { scrollWidth, clientWidth } = mainScrollRef.current;
+              const maxTableScroll = scrollWidth - clientWidth;
+              const trackRect = faderTrackRef.current.getBoundingClientRect();
+              
+              const widthRatio = Math.min(1, clientWidth / (scrollWidth || 1));
+              const maxThumbTravel = trackRect.width - (widthRatio * trackRect.width);
+
+              const scrollRatio = maxThumbTravel > 0 ? maxTableScroll / maxThumbTravel : 0;
+              
+              mainScrollRef.current.scrollLeft += (currentVelocity * 16 * scrollRatio);
+              
+              currentVelocity *= friction;
+              
+              requestAnimationFrame(glide);
+          };
+
+          if (Math.abs(velocity) > 0.05) {
+              requestAnimationFrame(glide);
+          }
       };
 
       window.addEventListener('mousemove', moveFader);
@@ -495,7 +535,7 @@ function App() {
                                 backgroundColor: settings.darkMode ? '#4b5563' : '#64748b', 
                                 borderColor: settings.darkMode ? '#1f2937' : '#94a3b8', 
                                 cursor: isFaderDragging ? 'grabbing' : 'grab',
-                                transition: isFaderDragging ? 'none' : 'left 1.5s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.3s, border-color 0.3s' 
+                                transition: 'background-color 0.3s, border-color 0.3s' 
                             }}
                         >
                             <div className="flex gap-1 opacity-60">

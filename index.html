@@ -821,21 +821,21 @@ function App() {
                                     const colorClass = rainbowColors[idx % rainbowColors.length];
                                     const rotateClass = idx % 2 === 0 ? 'rotate-1' : '-rotate-1';
                                     
-                                    let sizeClass = 'col-span-1 h-32 text-sm'; // Size 1
+                                    let sizeClass = 'col-span-1 aspect-square text-base p-4'; // Size 1
                                     if (opp.count > 1) {
                                         if (opp.count === maxCount && maxCount > 2) {
-                                            sizeClass = 'col-span-2 md:col-span-3 h-48 text-xl font-bold'; // Size 3
+                                            sizeClass = 'col-span-2 md:col-span-3 aspect-square text-2xl md:text-3xl font-extrabold p-8'; // Size 3
                                         } else {
-                                            sizeClass = 'col-span-2 h-40 text-lg font-semibold'; // Size 2
+                                            sizeClass = 'col-span-2 aspect-square text-xl font-bold p-6'; // Size 2
                                         }
                                     }
 
                                     return (
-                                        <div key={idx} className={`${colorClass} ${rotateClass} ${sizeClass} p-4 shadow-md hover:rotate-0 transition-all flex items-center justify-center text-center border-t-8 border-black/10 relative overflow-hidden rounded-sm`}>
-                                            <span className="relative z-10 text-gray-800 drop-shadow-sm">{opp.label}</span>
-                                            <span className="absolute inset-0 flex items-center justify-center text-[6rem] font-black text-black/5 pointer-events-none z-0 select-none">
-                                                {opp.count}
-                                            </span>
+                                        <div key={idx} className={`${colorClass} ${rotateClass} ${sizeClass} shadow-md hover:rotate-0 hover:scale-105 transition-all flex items-center justify-center text-center border-t-8 border-black/10 relative overflow-hidden rounded-sm cursor-pointer`}>
+                                            <span className="relative z-10 text-gray-900 drop-shadow-sm">{opp.label}</span>
+                                            <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full pointer-events-none z-0 select-none text-black/10" preserveAspectRatio="xMidYMid meet">
+                                                <text x="50%" y="50%" dominantBaseline="central" textAnchor="middle" fontWeight="900" fill="currentColor" fontSize="100">{opp.count}</text>
+                                            </svg>
                                         </div>
                                     )
                                 }); 

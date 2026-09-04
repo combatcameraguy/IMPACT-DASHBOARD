@@ -149,7 +149,7 @@ const DropdownPortal = ({ children, isOpen, anchorRef, onClose, width = '100%' }
     if (!isOpen) return null;
 
     return createPortal(
-        <div className="portal-content" style={{
+        <div className="portal-content" onClick={e => e.stopPropagation()} style={{
             position: 'fixed',
             top: coords.top,
             left: coords.left,
@@ -215,7 +215,7 @@ const InlineCalendar = ({ value, onChange, darkMode, onToggle, isExpanded, textS
   
   return (
     <div className="w-full">
-      <button ref={buttonRef} type="button" onClick={onToggle} className={`border-xl px-4 ${pyClass} hover:border-blue-400 focus:outline-none focus:border-blue-500 w-full text-left flex items-center justify-between`} style={{ borderColor: isExpanded ? '#3b82f6' : (darkMode ? '#4a4a4a' : '#e5e7eb'), backgroundColor: darkMode ? '#3a3a3a' : '#ffffff', color: darkMode ? '#ffffff' : '#000000', minHeight: '38px', boxShadow: isExpanded ? '0 0 0 3px rgba(59, 130, 246, 0.2)' : 'none', transition: 'all .2s ease', fontFamily: '"Roboto", sans-serif' }}>
+      <button ref={buttonRef} type="button" onClick={(e) => { e.stopPropagation(); onToggle(); }} className={`border-xl px-4 ${pyClass} hover:border-blue-400 focus:outline-none focus:border-blue-500 w-full text-left flex items-center justify-between`} style={{ borderColor: isExpanded ? '#3b82f6' : (darkMode ? '#4a4a4a' : '#e5e7eb'), backgroundColor: darkMode ? '#3a3a3a' : '#ffffff', color: darkMode ? '#ffffff' : '#000000', minHeight: '38px', boxShadow: isExpanded ? '0 0 0 3px rgba(59, 130, 246, 0.2)' : 'none', transition: 'all .2s ease', fontFamily: '"Roboto", sans-serif' }}>
         <span className={`font-semibold tracking-wide ${textSize}`}>{formatDisplayDate(value)}</span>
         <div className="chevron-rotate" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}><ChevronDown /></div>
       </button>
@@ -223,9 +223,9 @@ const InlineCalendar = ({ value, onChange, darkMode, onToggle, isExpanded, textS
       <DropdownPortal isOpen={isExpanded} anchorRef={buttonRef} onClose={onToggle} width="360px">
         <div className="rounded-xl shadow-xl border-2 w-full" style={{ backgroundColor: darkMode ? '#2a2a2a' : '#ffffff', borderColor: '#3b82f6', padding: '16px', animation: 'slideDown 2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards' }}>
           <div className="flex items-center justify-between mb-4">
-            <button type="button" onClick={() => changeMonth(-1)} className="p-2 rounded-lg hover:scale-110 transition-transform font-bold text-xl" style={{ backgroundColor: darkMode ? '#3a3a3a' : '#f3f4f6', color: darkMode ? '#ffffff' : '#000000' }}>&lt;</button>
+            <button type="button" onClick={(e) => { e.stopPropagation(); changeMonth(-1); }} className="p-2 rounded-lg hover:scale-110 transition-transform font-bold text-xl" style={{ backgroundColor: darkMode ? '#3a3a3a' : '#f3f4f6', color: darkMode ? '#ffffff' : '#000000' }}>&lt;</button>
             <span className="font-bold text-lg" style={{ color: darkMode ? '#ffffff' : '#000000', fontFamily: '"Montserrat", sans-serif' }}>{monthName}</span>
-            <button type="button" onClick={() => changeMonth(1)} className="p-2 rounded-lg hover:scale-110 transition-transform font-bold text-xl" style={{ backgroundColor: darkMode ? '#3a3a3a' : '#f3f4f6', color: darkMode ? '#ffffff' : '#000000' }}>&gt;</button>
+            <button type="button" onClick={(e) => { e.stopPropagation(); changeMonth(1); }} className="p-2 rounded-lg hover:scale-110 transition-transform font-bold text-xl" style={{ backgroundColor: darkMode ? '#3a3a3a' : '#f3f4f6', color: darkMode ? '#ffffff' : '#000000' }}>&gt;</button>
           </div>
           <div className="grid grid-cols-7 gap-1 mb-2"> 
             {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => <div key={day} className="text-center font-bold text-xs" style={{ color: darkMode ? '#9ca3af' : '#6b7280', fontFamily: '"Montserrat", sans-serif' }}>{day}</div>) } 
@@ -234,7 +234,7 @@ const InlineCalendar = ({ value, onChange, darkMode, onToggle, isExpanded, textS
             {days.map((day, idx) => { 
                 if (!day) return <div key={idx} />; 
                 const isSelected = selectedDate && selectedDate.getDate() === day && selectedDate.getMonth() === currentMonth.getMonth() && selectedDate.getFullYear() === currentMonth.getFullYear(); 
-                return <button key={idx} type="button" onClick={() => handleDayClick(day)} className="rounded-lg text-sm font-semibold transition-all duration-2000 hover:scale-110 hover:shadow-md" style={{ padding: '8px', backgroundColor: isSelected ? '#3b82f6' : (darkMode ? '#3a3a3a' : '#f9fafb'), color: isSelected ? '#ffffff' : (darkMode ? '#ffffff' : '#000000'), border: isSelected ? '2px solid #2563eb' : '1px solid ' + (darkMode ? '#4a4a4a' : '#e5e7eb'), fontFamily: '"Roboto", sans-serif' }}>{day}</button>; 
+                return <button key={idx} type="button" onClick={(e) => { e.stopPropagation(); handleDayClick(day); }} className="rounded-lg text-sm font-semibold transition-all duration-2000 hover:scale-110 hover:shadow-md" style={{ padding: '8px', backgroundColor: isSelected ? '#3b82f6' : (darkMode ? '#3a3a3a' : '#f9fafb'), color: isSelected ? '#ffffff' : (darkMode ? '#ffffff' : '#000000'), border: isSelected ? '2px solid #2563eb' : '1px solid ' + (darkMode ? '#4a4a4a' : '#e5e7eb'), fontFamily: '"Roboto", sans-serif' }}>{day}</button>; 
             }) } 
           </div>
         </div>
@@ -484,6 +484,82 @@ const defaultThemes = {
     'Tropical Fusion': { name: 'Tropical Fusion', background: '#FFFBF5', cardBg: '#ffffff', primary: '#392F5A', secondary: '#FF8811', accent: '#F4D06F', highlight: '#9DD9D2', dark: '#392F5A', textPrimary: '#1f2937', textSecondary: '#6b7280' } 
 };
 
+const branchColors = { 'Army': '#4B5320', 'Navy': '#000080', 'Air Force': '#00308F', 'Marines': '#990000', 'Coast Guard': '#00529B', 'Space Force': '#000000', 'Not started': '#9ca3af' };
+
+const EditableCell = ({ value, taskId, field, updateTask, darkMode }) => { 
+    const [isEditing, setIsEditing] = useState(false); 
+    const [tempValue, setTempValue] = useState(value); 
+    
+    useEffect(() => { setTempValue(value); }, [value]); 
+    
+    const handleSave = () => { 
+        updateTask(taskId, field, tempValue); 
+        setIsEditing(false); 
+    }; 
+    
+    if (isEditing) {
+        return <input type="text" value={tempValue} onChange={e => setTempValue(e.target.value)} onBlur={handleSave} onKeyDown={e => e.key === 'Enter' && handleSave()} onClick={e => e.stopPropagation()} className="w-full px-2 py-1 border border-blue-500 rounded focus:outline-none text-black font-roboto" style={{ backgroundColor: darkMode ? '#3a3a3a' : '#ffffff', color: darkMode ? '#ffffff' : '#1f2937' }} autoFocus />; 
+    }
+    
+    return <div onClick={(e) => { e.stopPropagation(); setIsEditing(true); }} className="cursor-pointer px-2 py-1 rounded min-h-[24px]" onMouseEnter={e => e.currentTarget.style.backgroundColor = darkMode ? '#3a3a3a' : '#f9fafb'} onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}>{value || <span className="italic opacity-60">Click to edit</span>}</div>; 
+};
+
+const BranchCell = ({ status, taskId, isExpanded, onToggle, updateTask, darkMode }) => { 
+    const options = ['Army', 'Navy', 'Air Force', 'Marines', 'Coast Guard', 'Space Force', 'Not started']; 
+    const buttonRef = useRef(null);
+    return ( 
+        <div className="w-full"> 
+            <button ref={buttonRef} onClick={(e) => { e.stopPropagation(); onToggle(); }} style={{ backgroundColor: branchColors[status] || '#9ca3af', color: getTextColor(branchColors[status] || '#9ca3af'), boxShadow: isExpanded ? '0 0 0 3px rgba(59, 130, 246, 0.2)' : 'none', transition: 'all .2s ease', fontFamily: '"Roboto", sans-serif' }} className="px-3 py-2 rounded text-sm font-medium w-full text-left flex items-center justify-between transition-colors"> 
+                <span>{status || 'Not started'}</span> 
+                <div className="chevron-rotate" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}><ChevronDown /></div> 
+            </button> 
+            <DropdownPortal isOpen={isExpanded} anchorRef={buttonRef} onClose={onToggle} width="200px">
+                <div className="rounded-lg shadow-xl border-2 p-2 space-y-2 w-full" style={{ borderColor: '#3b82f6', backgroundColor: darkMode ? '#2a2a2a' : '#ffffff', animation: 'slideDown 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards' }}> 
+                    {options.map(o => ( 
+                        <button key={o} onClick={(e) => { e.stopPropagation(); updateTask(taskId, 'branchOfService', o); onToggle(); }} style={{ backgroundColor: branchColors[o], color: getTextColor(branchColors[o]), fontFamily: '"Roboto", sans-serif' }} className="px-4 py-3 w-full text-left text-sm font-semibold rounded-lg hover:scale-105 hover:shadow-lg transition-all duration-2000">{o}</button> 
+                    ))} 
+                </div> 
+            </DropdownPortal>
+        </div> 
+    ); 
+};
+
+const FollowUpCell = ({ status, taskId, isExpanded, onToggle, activeTheme, updateTask, darkMode }) => { 
+    const options = ['Yes', 'No', 'Pending']; 
+    const buttonRef = useRef(null);
+    const getStatusColor = (opt) => { 
+        if (opt === 'Yes') return activeTheme.primary; 
+        if (opt === 'No') return activeTheme.secondary; 
+        if (opt === 'Pending') return activeTheme.accent; 
+        return '#9ca3af'; 
+    };
+    return ( 
+        <div className="w-full"> 
+            <button ref={buttonRef} onClick={(e) => { e.stopPropagation(); onToggle(); }} style={{ backgroundColor: getStatusColor(status), color: getTextColor(getStatusColor(status)), boxShadow: isExpanded ? '0 0 0 3px rgba(59, 130, 246, 0.2)' : 'none', transition: 'all .2s ease', fontFamily: '"Roboto", sans-serif' }} className="px-3 py-2 rounded text-sm font-medium w-full text-left flex items-center justify-between transition-colors"> 
+                <span>{status || 'Pending'}</span> 
+                <div className="chevron-rotate" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}><ChevronDown /></div> 
+            </button> 
+            <DropdownPortal isOpen={isExpanded} anchorRef={buttonRef} onClose={onToggle} width="130px">
+                <div className="rounded-lg shadow-xl border-2 p-2 space-y-2 w-full" style={{ borderColor: '#3b82f6', backgroundColor: darkMode ? '#2a2a2a' : '#ffffff', animation: 'slideDown 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards' }}> 
+                    {options.map(o => ( 
+                        <button key={o} onClick={(e) => { e.stopPropagation(); updateTask(taskId, 'followUpRequired', o); onToggle(); }} style={{ backgroundColor: getStatusColor(o), color: getTextColor(getStatusColor(o)), fontFamily: '"Roboto", sans-serif' }} className="px-4 py-3 w-full text-left text-sm font-semibold rounded-lg hover:scale-105 hover:shadow-lg transition-all duration-2000">{o}</button> 
+                    ))} 
+                </div> 
+            </DropdownPortal>
+        </div> 
+    ); 
+};
+
+const GroupHeader = ({ title, groupId, count, bgColor, expandedGroups, toggleGroup, draggedTask, tasks, setTasks, setDraggedTask }) => ( 
+    <div className="flex items-center justify-between rounded-lg mb-2 shadow-sm transition-all sticky top-0 z-40" style={{ backgroundColor: bgColor, color: getTextColor(bgColor) }} onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }} onDrop={(e) => { e.preventDefault(); if(draggedTask) { const newTasks = [...tasks]; const draggedIndex = newTasks.findIndex(t => t.id === draggedTask.id); newTasks[draggedIndex].group = groupId; setTasks(newTasks); setDraggedTask(null); } } }> 
+        <div className="px-4 py-3 flex items-center gap-3 sticky left-0 w-max z-20"> 
+            <button onClick={() => toggleGroup(groupId)} className="hover:bg-white/20 rounded p-1 transition-colors">{expandedGroups[groupId] ? <ChevronDown /> : <ChevronRight />}</button> 
+            <span className="font-semibold text-lg" style={{ fontFamily: '"Montserrat", sans-serif' }}>{title}</span>
+            <span className="bg-white/20 px-2 py-0.5 rounded-full text-sm font-medium">{count} items</span> 
+        </div> 
+    </div> 
+);
+
 function App() {
   const [user, setUser] = useState(null); 
   const [loading, setLoading] = useState(true); 
@@ -551,7 +627,6 @@ function App() {
   const resizeStartX = useRef(0); 
   const resizeStartWidth = useRef(0); 
   
-  const branchColors = { 'Army': '#4B5320', 'Navy': '#000080', 'Air Force': '#00308F', 'Marines': '#990000', 'Coast Guard': '#00529B', 'Space Force': '#000000', 'Not started': '#9ca3af' };
   const baseTheme = settings.useTheme ? (allThemes[settings.colorTheme] || allThemes['None']) : allThemes['None']; 
   const theme = settings.darkMode ? { ...baseTheme, background: '#2e2e2e', cardBg: '#2e2e2e', textPrimary: '#f9fafb', textSecondary: '#d1d5db' } : baseTheme;
   const toggleGroup = (groupId) => setExpandedGroups(prev => ({ ...prev, [groupId]: !prev[groupId] }));
@@ -862,7 +937,7 @@ function App() {
   };
 
   const exportJSON = () => { 
-      const dataToSave = { tasks, columnWidths, columnOrder, settings, expandedGroups, columns, customThemes, savedAt: new Date().toISOString(), version: '8.0' }; 
+      const dataToSave = { tasks, columnWidths, columnOrder, settings, expandedGroups, columns, customThemes, savedAt: new Date().toISOString(), version: '8.1' }; 
       const jsonString = JSON.stringify(dataToSave, null, 2); 
       const now = new Date(); 
       const filename = `IMPACT-BACKUP-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}.json`; 
@@ -1114,77 +1189,13 @@ function App() {
           document.body.style.userSelect = ''; 
       }; 
   }, [resizingColumn, handleMouseMove, handleMouseUp]);
-  
-  const EditableCell = ({ value, taskId, field }) => { 
-      const [isEditing, setIsEditing] = useState(false); 
-      const [tempValue, setTempValue] = useState(value); 
-      
-      useEffect(() => { setTempValue(value); }, [value]); 
-      
-      const handleSave = () => { 
-          updateTask(taskId, field, tempValue); 
-          setIsEditing(false); 
-      }; 
-      
-      if (isEditing) {
-          return <input type="text" value={tempValue} onChange={e => setTempValue(e.target.value)} onBlur={handleSave} onKeyDown={e => e.key === 'Enter' && handleSave()} className="w-full px-2 py-1 border border-blue-500 rounded focus:outline-none text-black font-roboto" style={{ backgroundColor: settings.darkMode ? '#3a3a3a' : '#ffffff', color: settings.darkMode ? '#ffffff' : '#1f2937' }} autoFocus />; 
-      }
-      
-      return <div onClick={() => setIsEditing(true)} className="cursor-pointer px-2 py-1 rounded min-h-[24px]" onMouseEnter={e => e.currentTarget.style.backgroundColor = settings.darkMode ? '#3a3a3a' : '#f9fafb'} onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}>{value || <span className="italic opacity-60">Click to edit</span>}</div>; 
-  };
-  
-  const BranchCell = ({ status, taskId, isExpanded, onToggle }) => { 
-      const options = ['Army', 'Navy', 'Air Force', 'Marines', 'Coast Guard', 'Space Force', 'Not started']; 
-      const buttonRef = useRef(null);
-      return ( 
-          <div className="w-full"> 
-              <button ref={buttonRef} onClick={onToggle} style={{ backgroundColor: branchColors[status] || '#9ca3af', color: getTextColor(branchColors[status] || '#9ca3af'), boxShadow: isExpanded ? '0 0 0 3px rgba(59, 130, 246, 0.2)' : 'none', transition: 'all .2s ease', fontFamily: '"Roboto", sans-serif' }} className="px-3 py-2 rounded text-sm font-medium w-full text-left flex items-center justify-between transition-colors"> 
-                  <span>{status || 'Not started'}</span> 
-                  <div className="chevron-rotate" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}><ChevronDown /></div> 
-              </button> 
-              <DropdownPortal isOpen={isExpanded} anchorRef={buttonRef} onClose={onToggle} width="200px">
-                  <div className="rounded-lg shadow-xl border-2 p-2 space-y-2 w-full" style={{ borderColor: '#3b82f6', backgroundColor: settings.darkMode ? '#2a2a2a' : '#ffffff', animation: 'slideDown 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards' }}> 
-                      {options.map(o => ( 
-                          <button key={o} onClick={() => { updateTask(taskId, 'branchOfService', o); onToggle(); }} style={{ backgroundColor: branchColors[o], color: getTextColor(branchColors[o]), fontFamily: '"Roboto", sans-serif' }} className="px-4 py-3 w-full text-left text-sm font-semibold rounded-lg hover:scale-105 hover:shadow-lg transition-all duration-2000">{o}</button> 
-                      ))} 
-                  </div> 
-              </DropdownPortal>
-          </div> 
-      ); 
-  };
-  
-  const FollowUpCell = ({ status, taskId, isExpanded, onToggle, activeTheme }) => { 
-      const options = ['Yes', 'No', 'Pending']; 
-      const buttonRef = useRef(null);
-      const getStatusColor = (opt) => { 
-          if (opt === 'Yes') return activeTheme.primary; 
-          if (opt === 'No') return activeTheme.secondary; 
-          if (opt === 'Pending') return activeTheme.accent; 
-          return '#9ca3af'; 
-      };
-      return ( 
-          <div className="w-full"> 
-              <button ref={buttonRef} onClick={onToggle} style={{ backgroundColor: getStatusColor(status), color: getTextColor(getStatusColor(status)), boxShadow: isExpanded ? '0 0 0 3px rgba(59, 130, 246, 0.2)' : 'none', transition: 'all .2s ease', fontFamily: '"Roboto", sans-serif' }} className="px-3 py-2 rounded text-sm font-medium w-full text-left flex items-center justify-between transition-colors"> 
-                  <span>{status || 'Pending'}</span> 
-                  <div className="chevron-rotate" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}><ChevronDown /></div> 
-              </button> 
-              <DropdownPortal isOpen={isExpanded} anchorRef={buttonRef} onClose={onToggle} width="130px">
-                  <div className="rounded-lg shadow-xl border-2 p-2 space-y-2 w-full" style={{ borderColor: '#3b82f6', backgroundColor: settings.darkMode ? '#2a2a2a' : '#ffffff', animation: 'slideDown 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards' }}> 
-                      {options.map(o => ( 
-                          <button key={o} onClick={() => { updateTask(taskId, 'followUpRequired', o); onToggle(); }} style={{ backgroundColor: getStatusColor(o), color: getTextColor(getStatusColor(o)), fontFamily: '"Roboto", sans-serif' }} className="px-4 py-3 w-full text-left text-sm font-semibold rounded-lg hover:scale-105 hover:shadow-lg transition-all duration-2000">{o}</button> 
-                      ))} 
-                  </div> 
-              </DropdownPortal>
-          </div> 
-      ); 
-  };
 
   const renderCell = (columnKey, task) => { 
       switch (columnKey) { 
           case 'branchOfService': 
-              return <BranchCell status={task.branchOfService || 'Not started'} taskId={task.id} isExpanded={expandedDropdown === `${task.id}-branchOfService`} onToggle={() => setExpandedDropdown(expandedDropdown === `${task.id}-branchOfService` ? null : `${task.id}-branchOfService`)} />; 
+              return <BranchCell status={task.branchOfService || 'Not started'} taskId={task.id} isExpanded={expandedDropdown === `${task.id}-branchOfService`} onToggle={() => setExpandedDropdown(expandedDropdown === `${task.id}-branchOfService` ? null : `${task.id}-branchOfService`)} updateTask={updateTask} darkMode={settings.darkMode} />; 
           case 'followUpRequired': 
-              return <FollowUpCell status={task.followUpRequired || 'Pending'} taskId={task.id} isExpanded={expandedDropdown === `${task.id}-followUp`} onToggle={() => setExpandedDropdown(expandedDropdown === `${task.id}-followUp` ? null : `${task.id}-followUp`)} activeTheme={theme} />; 
+              return <FollowUpCell status={task.followUpRequired || 'Pending'} taskId={task.id} isExpanded={expandedDropdown === `${task.id}-followUp`} onToggle={() => setExpandedDropdown(expandedDropdown === `${task.id}-followUp` ? null : `${task.id}-followUp`)} activeTheme={theme} updateTask={updateTask} darkMode={settings.darkMode} />; 
           case 'timestamp': 
               return <InlineCalendar value={task.timestamp} onChange={v => updateTask(task.id, 'timestamp', v)} darkMode={settings.darkMode} isExpanded={expandedDropdown === `${task.id}-timestamp`} onToggle={() => setExpandedDropdown(expandedDropdown === `${task.id}-timestamp` ? null : `${task.id}-timestamp`)} />; 
           case 'etsDate': 
@@ -1196,19 +1207,9 @@ function App() {
           case 'actions': 
               return <button onClick={(e) => { e.stopPropagation(); confirmDelete(task); }} className="text-gray-400 hover:text-red-500 p-2 rounded transition-colors"><Trash2 size={18} /></button>; 
           default: 
-              return <EditableCell value={task[columnKey] || ''} taskId={task.id} field={columnKey} />; 
+              return <EditableCell value={task[columnKey] || ''} taskId={task.id} field={columnKey} updateTask={updateTask} darkMode={settings.darkMode} />; 
       } 
   };
-  
-  const GroupHeader = ({ title, groupId, count, bgColor }) => ( 
-    <div className="flex items-center justify-between rounded-lg mb-2 shadow-sm transition-all sticky top-0 z-40" style={{ backgroundColor: bgColor, color: getTextColor(bgColor) }} onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }} onDrop={(e) => { e.preventDefault(); if(draggedTask) { const newTasks = [...tasks]; const draggedIndex = newTasks.findIndex(t => t.id === draggedTask.id); newTasks[draggedIndex].group = groupId; setTasks(newTasks); setDraggedTask(null); } } }> 
-        <div className="px-4 py-3 flex items-center gap-3 sticky left-0 w-max z-20"> 
-            <button onClick={() => toggleGroup(groupId)} className="hover:bg-white/20 rounded p-1 transition-colors">{expandedGroups[groupId] ? <ChevronDown /> : <ChevronRight />}</button> 
-            <span className="font-semibold text-lg" style={{ fontFamily: '"Montserrat", sans-serif' }}>{title}</span>
-            <span className="bg-white/20 px-2 py-0.5 rounded-full text-sm font-medium">{count} items</span> 
-        </div> 
-    </div> 
-  );
   
   const groups = { 
       group1: { title: 'INBOX', bgColor: theme.accent }, 
@@ -1228,7 +1229,7 @@ function App() {
                 <span style={{ color: '#f7b512', fontSize: '1.15em' }}>IMPACT</span> Intake Dashboard
             </h1>
             <div className="flex flex-col pb-1">
-                <span className="text-sm font-medium text-gray-500">v8.0</span>
+                <span className="text-sm font-medium text-gray-500">v8.1</span>
                 <div className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: theme.textSecondary }}>
                     <div className={`w-2 h-2 rounded-full ${firebaseStatus === 'online' ? 'bg-green-500 animate-pulse' : firebaseStatus === 'offline' ? 'bg-red-500' : 'bg-yellow-500 animate-bounce'}`}></div>
                     <span>{firebaseStatus === 'online' ? 'Connected to Firebase' : firebaseStatus === 'offline' ? 'Disconnected' : 'Checking...'}</span>
@@ -1289,7 +1290,7 @@ function App() {
                     const groupTasks = sortedFilteredTasks.filter(t => t.group === groupId); 
                     return ( 
                         <div key={groupId} className="border-b border-gray-200"> 
-                            <GroupHeader title={groupData.title} groupId={groupId} count={groupTasks.length} bgColor={groupData.bgColor} /> 
+                            <GroupHeader title={groupData.title} groupId={groupId} count={groupTasks.length} bgColor={groupData.bgColor} expandedGroups={expandedGroups} toggleGroup={toggleGroup} draggedTask={draggedTask} tasks={tasks} setTasks={setTasks} setDraggedTask={setDraggedTask} /> 
                             
                             {expandedGroups[groupId] && ( 
                                 <div className="pb-12 origin-top animate-fade-in"> 

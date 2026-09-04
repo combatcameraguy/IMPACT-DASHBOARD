@@ -846,7 +846,7 @@ function App() {
   };
 
   const exportJSON = () => { 
-      const dataToSave = { tasks, columnWidths, columnOrder, settings, expandedGroups, columns, customThemes, savedAt: new Date().toISOString(), version: '7.7' }; 
+      const dataToSave = { tasks, columnWidths, columnOrder, settings, expandedGroups, columns, customThemes, savedAt: new Date().toISOString(), version: '7.8' }; 
       const jsonString = JSON.stringify(dataToSave, null, 2); 
       const now = new Date(); 
       const filename = `IMPACT-BACKUP-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}.json`; 
@@ -1212,7 +1212,7 @@ function App() {
                 <span style={{ color: '#f7b512', fontSize: '1.15em' }}>IMPACT</span> Intake Dashboard
             </h1>
             <div className="flex flex-col pb-1">
-                <span className="text-sm font-medium text-gray-500">v7.7</span>
+                <span className="text-sm font-medium text-gray-500">v7.8</span>
                 <div className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: theme.textSecondary }}>
                     <div className={`w-2 h-2 rounded-full ${firebaseStatus === 'online' ? 'bg-green-500 animate-pulse' : firebaseStatus === 'offline' ? 'bg-red-500' : 'bg-yellow-500 animate-bounce'}`}></div>
                     <span>{firebaseStatus === 'online' ? 'Connected to Firebase' : firebaseStatus === 'offline' ? 'Disconnected' : 'Checking...'}</span>
@@ -1334,7 +1334,7 @@ function App() {
                                                             fontFamily: '"Roboto", sans-serif', 
                                                             fontSize: '1.05rem', 
                                                             animationDelay: `${index * 0.05}s`,
-                                                            transition: 'background-color 0.3s ease'
+                                                            transition: 'all 0.3s ease'
                                                         }} 
                                                         className={`border-b cursor-move task-row row-enter ${isUnread ? 'row-glow' : ''}`}> 
                                                         {columnOrder.map((columnKey) => ( 
@@ -1343,10 +1343,10 @@ function App() {
                                                                 width: `${columnWidths[columnKey]}px`,
                                                                 position: columnKey === 'fullName' ? 'sticky' : 'relative',
                                                                 left: columnKey === 'fullName' ? '0px' : 'auto',
-                                                                backgroundColor: columnKey === 'fullName' ? currentRowBg : 'transparent',
+                                                                background: columnKey === 'fullName' ? `linear-gradient(${currentRowBg}, ${currentRowBg}), ${settings.darkMode ? '#2a2a2a' : (theme.cardBg || theme.background)}` : 'transparent',
                                                                 zIndex: columnKey === 'fullName' ? 40 : 1,
                                                                 boxShadow: columnKey === 'fullName' ? '4px 0 8px -2px rgba(0,0,0,0.1)' : 'none',
-                                                                transition: 'background-color 0.3s ease'
+                                                                transition: 'all 0.3s ease'
                                                             }} className="px-4 py-3 align-top">
                                                                 {renderCell(columnKey, task)}
                                                             </td> 

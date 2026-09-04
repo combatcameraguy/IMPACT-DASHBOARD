@@ -345,6 +345,14 @@ function App() {
       document.body.style.cursor = 'grabbing';
       document.body.style.userSelect = 'none';
 
+      const startX = e.clientX;
+      let startPercent = 0;
+      if (mainScrollRef.current) {
+          const { scrollLeft, scrollWidth, clientWidth } = mainScrollRef.current;
+          const maxScroll = scrollWidth - clientWidth;
+          startPercent = maxScroll > 0 ? scrollLeft / maxScroll : 0;
+      }
+
       let lastX = e.clientX;
       let lastTime = performance.now();
       let velocity = 0;
@@ -368,8 +376,9 @@ function App() {
           const thumbPixels = widthRatio * trackRect.width;
           const maxThumbTravel = trackRect.width - thumbPixels;
           
-          let px = moveEvent.clientX - trackRect.left;
-          let percent = maxThumbTravel > 0 ? (px - (thumbPixels / 2)) / maxThumbTravel : 0;
+          // RELATIVE DRAG LOGIC
+          const deltaX = moveEvent.clientX - startX;
+          let percent = maxThumbTravel > 0 ? startPercent + (deltaX / maxThumbTravel) : 0;
           percent = Math.max(0, Math.min(1, percent));
 
           setFaderState(prev => ({ ...prev, percent, widthRatio }));
@@ -414,7 +423,6 @@ function App() {
 
       window.addEventListener('mousemove', moveFader);
       window.addEventListener('mouseup', stopFader);
-      moveFader(e);
   };
 
   const updateTask = (id, field, value) => { setTasks(prev => prev.map(task => { if (task.id === id) { const updatedTask = {...task, [field]: value }; if (field === 'pipelineStatus') { if (value === 'Done') updatedTask.group = 'group2'; else if (task.pipelineStatus === 'Done' && value !== 'Done') updatedTask.group = 'group1'; } if (field === 'followUpRequired') { if (value === 'Yes') updatedTask.group = 'group2'; else if (value === 'No' && task.group === 'group2') updatedTask.group = 'group1'; } return updatedTask; } return task; })); };

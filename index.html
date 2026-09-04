@@ -32,23 +32,25 @@ tbody tr td > div { color: inherit; }
 /* STAGGERED ROW FADE IN - ENFORCES OPACITY 1 AT COMPLETION */
 @keyframes rowFadeIn { 
     0% { opacity: 0; transform: translateY(-15px); } 
-    100% { opacity: 1; transform: translateY(0); } 
+    100% { opacity: 1; transform: none; } 
 }
 .row-enter {
     animation: rowFadeIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-@keyframes fadeIn { 0% { opacity: 0; transform: translateY(-10px); } 100% { opacity: 1; transform: translateY(0); } }
+@keyframes fadeIn { 0% { opacity: 0; transform: translateY(-10px); } 100% { opacity: 1; transform: none; } }
 .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
 
 /* HARDWARE ACCELERATED HOVER TO PREVENT MENU FLASHING */
 .task-row {
-    transition: filter 0.2s ease, background-color 0.4s ease, color 0.4s ease;
+    transition: background-color 0.4s ease, color 0.4s ease;
 }
-.task-row:hover {
-    filter: brightness(1.08);
+.task-row td {
+    transition: filter 0.2s ease;
 }
-
+.task-row:hover td {
+    filter: brightness(1.08); 
+}
 /* CUSTOM GLOW FOR UNREAD/NEW ITEMS */
 @keyframes pulseBg {
     0% { background-color: rgba(247, 181, 18, 0.08); }

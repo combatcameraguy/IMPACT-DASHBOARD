@@ -1262,12 +1262,14 @@ function App() {
                                                         onDragLeave={handleDragLeave} 
                                                         onDrop={(e) => handleDrop(e, task)} 
                                                         style={{ 
-                                                            backgroundColor: currentRowBg, 
-                                                            color: rowTextColor, 
-                                                            fontFamily: '"Roboto", sans-serif', 
-                                                            fontSize: '1.05rem', 
-                                                            animationDelay: `${index * 0.05}s`
-                                                        }} 
+    backgroundColor: currentRowBg, 
+    color: rowTextColor, 
+    fontFamily: '"Roboto", sans-serif', 
+    fontSize: '1.05rem', 
+    animationDelay: `${index * 0.05}s`,
+    position: 'relative',
+    zIndex: isRowExpanded ? 50 : 1
+}}
                                                         className={`border-b cursor-move task-row row-enter ${isUnread ? 'row-glow' : ''}`}> 
                                                         {columnOrder.map((columnKey) => ( 
                                                             <td key={columnKey} style={{ minWidth: `${columnWidths[columnKey]}px`, width: `${columnWidths[columnKey]}px`, zIndex: isRowExpanded ? 40 : 1 }} className="px-4 py-3 align-top relative">

@@ -29,15 +29,25 @@ tbody tr td > div { color: inherit; }
 .animate-scale-in, .dropdown-content, .modal-backdrop { animation-timing-function: cubic-bezier(1.5, 0.1, 0.25, 1); animation-duration: 0.3s; }
 @keyframes slideDown { 0% { opacity: 0; transform: translateY(-20px) scale(0.95); max-height: 0; } 100% { opacity: 1; transform: translateY(0) scale(1); max-height: 600px; } }
 
-/* NEW STAGGERED ROW FADE IN */
+/* STAGGERED ROW FADE IN - ENFORCES OPACITY 1 AT COMPLETION */
 @keyframes rowFadeIn { 
-    0% { opacity: 0; transform: translateY(-20px); } 
+    0% { opacity: 0; transform: translateY(-15px); } 
     100% { opacity: 1; transform: translateY(0); } 
+}
+.row-enter {
+    animation: rowFadeIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 @keyframes fadeIn { 0% { opacity: 0; transform: translateY(-10px); } 100% { opacity: 1; transform: translateY(0); } }
-.animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
-tbody tr { transition: all 2s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+
+/* HARDWARE ACCELERATED HOVER TO PREVENT MENU FLASHING */
+.task-row {
+    transition: filter 0.2s ease, background-color 0.4s ease, color 0.4s ease;
+}
+.task-row:hover {
+    filter: brightness(1.08);
+}
 
 /* CUSTOM GLOW FOR UNREAD/NEW ITEMS */
 @keyframes pulseBg {
@@ -577,6 +587,7 @@ function App() {
           const thumbPixels = widthRatio * trackRect.width;
           const maxThumbTravel = trackRect.width - thumbPixels;
           
+          // RELATIVE DRAG LOGIC
           const deltaX = moveEvent.clientX - startX;
           let percent = maxThumbTravel > 0 ? startPercent + (deltaX / maxThumbTravel) : 0;
           percent = Math.max(0, Math.min(1, percent));
@@ -641,6 +652,7 @@ function App() {
       })); 
   };
   
+  // 7-SECOND UNDO LOGIC
   const confirmDelete = (task) => { 
       setTasks(prev => prev.filter(t => t.id !== task.id));
       if (deletedTaskToast) clearTimeout(deletedTaskToast.timeoutId);
@@ -783,7 +795,7 @@ function App() {
   };
 
   const exportJSON = () => { 
-      const dataToSave = { tasks, columnWidths, columnOrder, settings, expandedGroups, columns, customThemes, savedAt: new Date().toISOString(), version: '7.2' }; 
+      const dataToSave = { tasks, columnWidths, columnOrder, settings, expandedGroups, columns, customThemes, savedAt: new Date().toISOString(), version: '7.3' }; 
       const jsonString = JSON.stringify(dataToSave, null, 2); 
       const now = new Date(); 
       const filename = `IMPACT-BACKUP-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}.json`; 
@@ -1058,7 +1070,7 @@ function App() {
       const options = ['Army', 'Navy', 'Air Force', 'Marines', 'Coast Guard', 'Space Force', 'Not started']; 
       return ( 
           <div className={`w-full relative ${isExpanded ? 'z-50' : ''}`}> 
-              <button onClick={onToggle} style={{ backgroundColor: branchColors[status] || '#9ca3af', color: getTextColor(branchColors[status] || '#9ca3af'), boxShadow: isExpanded ? '0 0 0 3px rgba(59, 130, 246, 0.2)' : 'none', transition: 'all .2s ease', fontFamily: '"Roboto", sans-serif' }} className="px-3 py-2 rounded text-sm font-medium hover:opacity-90 w-full text-left flex items-center justify-between"> 
+              <button onClick={onToggle} style={{ backgroundColor: branchColors[status] || '#9ca3af', color: getTextColor(branchColors[status] || '#9ca3af'), boxShadow: isExpanded ? '0 0 0 3px rgba(59, 130, 246, 0.2)' : 'none', transition: 'all .2s ease', fontFamily: '"Roboto", sans-serif' }} className="px-3 py-2 rounded text-sm font-medium w-full text-left flex items-center justify-between transition-colors"> 
                   <span>{status || 'Not started'}</span> 
                   <div className="chevron-rotate" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}><ChevronDown /></div> 
               </button> 
@@ -1083,7 +1095,7 @@ function App() {
       };
       return ( 
           <div className={`w-full relative ${isExpanded ? 'z-50' : ''}`}> 
-              <button onClick={onToggle} style={{ backgroundColor: getStatusColor(status), color: getTextColor(getStatusColor(status)), boxShadow: isExpanded ? '0 0 0 3px rgba(59, 130, 246, 0.2)' : 'none', transition: 'all .2s ease', fontFamily: '"Roboto", sans-serif' }} className="px-3 py-2 rounded text-sm font-medium hover:opacity-90 w-full text-left flex items-center justify-between"> 
+              <button onClick={onToggle} style={{ backgroundColor: getStatusColor(status), color: getTextColor(getStatusColor(status)), boxShadow: isExpanded ? '0 0 0 3px rgba(59, 130, 246, 0.2)' : 'none', transition: 'all .2s ease', fontFamily: '"Roboto", sans-serif' }} className="px-3 py-2 rounded text-sm font-medium w-full text-left flex items-center justify-between transition-colors"> 
                   <span>{status || 'Pending'}</span> 
                   <div className="chevron-rotate" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}><ChevronDown /></div> 
               </button> 
@@ -1147,7 +1159,7 @@ function App() {
                 <span style={{ color: '#f7b512', fontSize: '1.15em' }}>IMPACT</span> Intake Dashboard
             </h1>
             <div className="flex flex-col pb-1">
-                <span className="text-sm font-medium text-gray-500">v7.2</span>
+                <span className="text-sm font-medium text-gray-500">v7.3</span>
                 <div className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: theme.textSecondary }}>
                     <div className={`w-2 h-2 rounded-full ${firebaseStatus === 'online' ? 'bg-green-500 animate-pulse' : firebaseStatus === 'offline' ? 'bg-red-500' : 'bg-yellow-500 animate-bounce'}`}></div>
                     <span>{firebaseStatus === 'online' ? 'Connected to Firebase' : firebaseStatus === 'offline' ? 'Disconnected' : 'Checking...'}</span>
@@ -1211,7 +1223,7 @@ function App() {
                             <GroupHeader title={groupData.title} groupId={groupId} count={groupTasks.length} bgColor={groupData.bgColor} /> 
                             
                             {expandedGroups[groupId] && ( 
-                                <div className="pb-12 origin-top overflow-hidden" style={{ animation: 'accordionOpen 1.2s cubic-bezier(0.22, 1, 0.36, 1) forwards' }}> 
+                                <div className="pb-12 origin-top animate-fade-in"> 
                                     <table className="min-w-full" style={{ width: '100%', tableLayout: 'fixed' }}>
                                         <thead className="sticky top-[52px] z-30 shadow-sm"> 
                                             <tr style={{ backgroundColor: settings.darkMode ? '#3a3a3a' : '#f9fafb', color: settings.darkMode ? '#ffffff' : '#111827', borderBottom: `1px solid ${settings.darkMode ? '#4a4a4a' : '#e5e7eb'}` }}> 
@@ -1252,16 +1264,13 @@ function App() {
                                                         style={{ 
                                                             backgroundColor: currentRowBg, 
                                                             color: rowTextColor, 
-                                                            transition: 'background-color 0.4s, color 0.4s, filter 0.4s', 
                                                             fontFamily: '"Roboto", sans-serif', 
                                                             fontSize: '1.05rem', 
-                                                            position: 'relative', 
-                                                            zIndex: isRowExpanded ? 40 : 1,
-                                                            animation: `rowFadeIn 0.5s ease-out backwards ${index * 0.05}s`
+                                                            animationDelay: `${index * 0.05}s`
                                                         }} 
-                                                        className={`border-b cursor-move hover:brightness-110 ${isUnread ? 'row-glow' : ''}`}> 
+                                                        className={`border-b cursor-move task-row row-enter ${isUnread ? 'row-glow' : ''}`}> 
                                                         {columnOrder.map((columnKey) => ( 
-                                                            <td key={columnKey} style={{ minWidth: `${columnWidths[columnKey]}px`, width: `${columnWidths[columnKey]}px` }} className={`px-4 py-3 align-top ${isRowExpanded ? 'relative z-40' : ''}`}>
+                                                            <td key={columnKey} style={{ minWidth: `${columnWidths[columnKey]}px`, width: `${columnWidths[columnKey]}px`, zIndex: isRowExpanded ? 40 : 1 }} className="px-4 py-3 align-top relative">
                                                                 {renderCell(columnKey, task)}
                                                             </td> 
                                                         ))} 

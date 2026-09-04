@@ -28,10 +28,12 @@ input[type="date"]::-webkit-datetime-edit { padding: 0.5em; }
 tbody tr td > div { color: inherit; }
 .animate-scale-in, .dropdown-content, .modal-backdrop { animation-timing-function: cubic-bezier(1.5, 0.1, 0.25, 1); animation-duration: 0.3s; }
 @keyframes slideDown { 0% { opacity: 0; transform: translateY(-20px) scale(0.95); max-height: 0; } 100% { opacity: 1; transform: translateY(0) scale(1); max-height: 600px; } }
-@keyframes accordionOpen { 0% { max-height: 0; opacity: 0; } 100% { max-height: 4000px; opacity: 1; } }
 
 /* NEW STAGGERED ROW FADE IN */
-@keyframes rowFadeIn { 0% { opacity: 0; transform: translateY(-10px); } 100% { opacity: 1; transform: translateY(0); } }
+@keyframes rowFadeIn { 
+    0% { opacity: 0; transform: translateY(-20px); } 
+    100% { opacity: 1; transform: translateY(0); } 
+}
 
 @keyframes fadeIn { 0% { opacity: 0; transform: translateY(-10px); } 100% { opacity: 1; transform: translateY(0); } }
 .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
@@ -341,7 +343,9 @@ const OpportunitiesWall = ({ tasks, theme }) => {
     const getTextColorForNote = (bgColor) => { 
         if(!bgColor) return '#ffffff'; 
         const hex = bgColor.replace('#', ''); 
-        const r = parseInt(hex.substr(0, 2), 16); const g = parseInt(hex.substr(2, 2), 16); const b = parseInt(hex.substr(4, 2), 16); 
+        const r = parseInt(hex.substr(0, 2), 16); 
+        const g = parseInt(hex.substr(2, 2), 16); 
+        const b = parseInt(hex.substr(4, 2), 16); 
         const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255; 
         return luminance > 0.6 ? '#1f2937' : '#ffffff'; 
     };
@@ -775,7 +779,7 @@ function App() {
   };
 
   const exportJSON = () => { 
-      const dataToSave = { tasks, columnWidths, columnOrder, settings, expandedGroups, columns, customThemes, savedAt: new Date().toISOString(), version: '7.0' }; 
+      const dataToSave = { tasks, columnWidths, columnOrder, settings, expandedGroups, columns, customThemes, savedAt: new Date().toISOString(), version: '7.1' }; 
       const jsonString = JSON.stringify(dataToSave, null, 2); 
       const now = new Date(); 
       const filename = `IMPACT-BACKUP-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}.json`; 
@@ -1139,7 +1143,7 @@ function App() {
                 <span style={{ color: '#f7b512', fontSize: '1.15em' }}>IMPACT</span> Intake Dashboard
             </h1>
             <div className="flex flex-col pb-1">
-                <span className="text-sm font-medium text-gray-500">v7.0</span>
+                <span className="text-sm font-medium text-gray-500">v7.1</span>
                 <div className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: theme.textSecondary }}>
                     <div className={`w-2 h-2 rounded-full ${firebaseStatus === 'online' ? 'bg-green-500 animate-pulse' : firebaseStatus === 'offline' ? 'bg-red-500' : 'bg-yellow-500 animate-bounce'}`}></div>
                     <span>{firebaseStatus === 'online' ? 'Connected to Firebase' : firebaseStatus === 'offline' ? 'Disconnected' : 'Checking...'}</span>
@@ -1203,7 +1207,7 @@ function App() {
                             <GroupHeader title={groupData.title} groupId={groupId} count={groupTasks.length} bgColor={groupData.bgColor} /> 
                             
                             {expandedGroups[groupId] && ( 
-                                <div className="pb-6 min-h-[300px] origin-top overflow-hidden" style={{ animation: 'accordionOpen 1.2s cubic-bezier(0.22, 1, 0.36, 1) forwards' }}> 
+                                <div className="pb-12 origin-top" style={{ animation: 'fadeIn 0.6s ease-out forwards' }}> 
                                     <table className="min-w-full" style={{ width: '100%', tableLayout: 'fixed' }}>
                                         <thead className="sticky top-[52px] z-30 shadow-sm"> 
                                             <tr style={{ backgroundColor: settings.darkMode ? '#3a3a3a' : '#f9fafb', color: settings.darkMode ? '#ffffff' : '#111827', borderBottom: `1px solid ${settings.darkMode ? '#4a4a4a' : '#e5e7eb'}` }}> 
@@ -1249,8 +1253,7 @@ function App() {
                                                             fontSize: '1.05rem', 
                                                             position: isRowExpanded ? 'relative' : 'static', 
                                                             zIndex: isRowExpanded ? 40 : 'auto',
-                                                            opacity: 0,
-                                                            animation: `rowFadeIn 0.5s ease-out forwards ${index * 0.05}s`
+                                                            animation: `rowFadeIn 0.5s ease-out backwards ${index * 0.05}s`
                                                         }} 
                                                         className={`border-b cursor-move ${!expandedDropdown ? 'hover:brightness-110' : ''} ${isUnread ? 'row-glow' : ''}`}> 
                                                         {columnOrder.map((columnKey) => ( 
@@ -1396,6 +1399,7 @@ function App() {
                             tasks.forEach(t => {
                                 if (!t.timestamp) return;
                                 
+                                // Category / Column Value Filter logic
                                 if (chartPresets.filterCol && chartPresets.filterVal) {
                                     if (t[chartPresets.filterCol] !== chartPresets.filterVal) return;
                                 }
@@ -1403,6 +1407,7 @@ function App() {
                                 const d = new Date(t.timestamp);
                                 if (isNaN(d.getTime())) return;
 
+                                // Date Range Filter logic
                                 if (dateRange.start && d < new Date(dateRange.start + 'T00:00:00')) return;
                                 if (dateRange.end && d > new Date(dateRange.end + 'T23:59:59')) return;
 

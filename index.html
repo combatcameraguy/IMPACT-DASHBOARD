@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Kanit:wght@400;600;700&display=swap" rel="stylesheet">
 <!-- Roboto Font for Data Rows & Analytics -->
-<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -55,6 +55,14 @@ tbody tr.calendar-expanded td > div { width: 100%; }
 .chevron-rotate { transition: transform 2s cubic-bezier(0.34, 1.56, 0.64, 1); }
 .hide-native-scroll::-webkit-scrollbar { height: 0px; width: 0px; }
 .hide-native-scroll { scrollbar-width: none; }
+
+/* LARGE CUSTOM EXPORT CHECKBOXES */
+.export-checkbox {
+    appearance: none; -webkit-appearance: none; width: 32px; height: 32px; border: 3px solid #cbd5e1; border-radius: 8px; display: grid; place-content: center; cursor: pointer; transition: all 0.2s ease-in-out; flex-shrink: 0;
+}
+.export-checkbox::before { content: ""; width: 18px; height: 18px; transform: scale(0); transition: 120ms transform ease-in-out; background-color: white; clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%); }
+.export-checkbox:checked { background-color: #10b981; border-color: #10b981; }
+.export-checkbox:checked::before { transform: scale(1); }
 </style>
 </head>
 <body>
@@ -226,6 +234,55 @@ const SimpleLineChart = ({ data, theme }) => {
     );
 };
 
+// MASONRY "STICKY NOTE" OPPORTUNITIES COMPONENT
+const OpportunitiesWall = ({ tasks, theme }) => {
+    const counts = {};
+    tasks.forEach(t => {
+        if (!t.opportunities) return;
+        t.opportunities.split(',').forEach(opp => {
+            let o = opp.trim().toLowerCase();
+            if (!o) return;
+            // Basic capitalization for consistency
+            o = o.charAt(0).toUpperCase() + o.slice(1);
+            counts[o] = (counts[o] || 0) + 1;
+        });
+    });
+    const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+    if(sorted.length === 0) return <div className="text-gray-500 italic p-4 text-center">No data available to chart</div>;
+    
+    const maxCount = sorted[0][1];
+    const getTextColorForNote = (bgColor) => { 
+        if(!bgColor) return '#ffffff'; 
+        const hex = bgColor.replace('#', ''); 
+        const r = parseInt(hex.substr(0, 2), 16); const g = parseInt(hex.substr(2, 2), 16); const b = parseInt(hex.substr(4, 2), 16); 
+        const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255; 
+        return luminance > 0.6 ? '#1f2937' : '#ffffff'; 
+    };
+    
+    return (
+        <div className="flex flex-wrap gap-4 items-start w-full mt-4 justify-center">
+            {sorted.map(([opp, count], i) => {
+                // Golden ratio tiered sizing
+                let sizeClass = "p-3 w-32 min-h-[8rem] text-sm"; // Small note
+                if (count > maxCount * 0.6) sizeClass = "p-6 w-64 min-h-[16rem] text-xl font-bold"; // Large Note
+                else if (count > maxCount * 0.25) sizeClass = "p-5 w-48 min-h-[12rem] text-lg font-semibold"; // Medium Note
+                
+                const bgColors = [theme.primary, theme.secondary, theme.accent, theme.highlight];
+                const bgColor = bgColors[i % bgColors.length];
+                const textColor = getTextColorForNote(bgColor);
+                
+                return (
+                    <div key={opp} className={`relative rounded-xl shadow-lg flex flex-col justify-center items-center text-center overflow-hidden transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl ${sizeClass}`} style={{ backgroundColor: bgColor, color: textColor }}>
+                        {/* Faded Background Number */}
+                        <span className="absolute -bottom-4 -right-2 text-9xl font-black opacity-10 pointer-events-none select-none" style={{ color: textColor }}>{count}</span>
+                        <span className="relative z-10 drop-shadow-md leading-tight">{opp}</span>
+                    </div>
+                )
+            })}
+        </div>
+    )
+};
+
 const firebaseConfig = { apiKey: "AIzaSyCEAoWW1iGQJz9cNJINvONIDaidXLkxK8s", authDomain: "impact-datatrak.firebaseapp.com", projectId: "impact-datatrak", storageBucket: "impact-datatrak.firebasestorage.app", messagingSenderId: "489513066612", appId: "1:489513066612:web:d8540498107aad77cff121", databaseURL: "https://impact-datatrak-default-rtdb.firebaseio.com" };
 let database; let auth;
 try { firebase.initializeApp(firebaseConfig); database = firebase.database(); auth = firebase.auth(); } catch (error) { console.error(error); }
@@ -256,8 +313,11 @@ function App() {
   const [isFaderDragging, setIsFaderDragging] = useState(false);
   const [deletedTaskToast, setDeletedTaskToast] = useState(null);
   
+  // EXPORT MODAL STATE
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportSelections, setExportSelections] = useState({});
+
   const [searchQuery, setSearchQuery] = useState('');
-  
   const [chartPresets, setChartPresets] = useState({ followUp: 'pie', branch: 'pie', opportunities: 'bar', status: 'pie', education: 'pie', timeGroup: 'month', filterCol: '', filterVal: '' });
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
   
@@ -479,9 +539,38 @@ function App() {
   const formatToYYYYMMDD = (raw) => { if (!raw) return ''; let d = raw.trim().split(' ')[0]; if (d.includes('/')) { const parts = d.split('/'); if (parts.length === 3) { let y = parts[2]; if (y.length === 2) y = '20' + y; return `${y}-${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}`; } } return d; };
   
   const parseCSV = (text) => { const result = []; let row = []; let inQuotes = false; let currentValue = ''; for (let i = 0; i < text.length; i++) { const char = text[i]; if (char === '"') { if (inQuotes && text[i+1] === '"') { currentValue += '"'; i++; } else { inQuotes = !inQuotes; } } else if (char === ',' && !inQuotes) { row.push(currentValue); currentValue = ''; } else if ((char === '\n' || char === '\r') && !inQuotes) { if (char === '\r' && text[i+1] === '\n') i++; row.push(currentValue); if (row.some(val => val.trim() !== '')) result.push(row); row = []; currentValue = ''; } else { currentValue += char; } } if (currentValue || row.length > 0) { row.push(currentValue); result.push(row); } if (result.length < 2) return []; const headers = result[0].map(h => h.trim()); return result.slice(1).map(rowArray => { const obj = {}; headers.forEach((h, idx) => { obj[h] = rowArray[idx] ? rowArray[idx].trim() : ''; }); return obj; }); };
-  const handleFileLoad = (event) => { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (e) => { try { const content = e.target.result; const isCSV = file.name.toLowerCase().endsWith('.csv'); if (isCSV) { const parsedData = parseCSV(content); const newTasks = parsedData.map((row, index) => { const ts = formatToYYYYMMDD(row['Timestamp'] || new Date().toISOString().split('T')[0]); const etsDateStr = formatToYYYYMMDD(row[Object.keys(row).find(k => k.toLowerCase().includes('ets'))] || ''); const terminalLeaveStr = formatToYYYYMMDD(row[Object.keys(row).find(k => k.toLowerCase().includes('terminal leave'))] || ''); return { id: Math.max(...(tasks.length ? tasks.map(t => t.id) : [0]), 0) + index + 1, group: 'group1', timestamp: ts, fullName: row[Object.keys(row).find(k => k.toLowerCase().includes('name'))] || '', phone: row[Object.keys(row).find(k => k.toLowerCase().includes('phone'))] || '', email: row[Object.keys(row).find(k => k.toLowerCase().includes('email'))] || '', currentStatus: row[Object.keys(row).find(k => k.toLowerCase().includes('current status'))] || '', branchOfService: row[Object.keys(row).find(k => k.toLowerCase().includes('branch'))] || 'Not started', followUpRequired: 'Pending', agreeToContact: row[Object.keys(row).find(k => k.toLowerCase().includes('agree'))] || '', mos: row[Object.keys(row).find(k => k.toLowerCase().includes('mos'))] || '', payGrade: row[Object.keys(row).find(k => k.toLowerCase().includes('pay grade'))] || '', etsDate: etsDateStr, terminalLeave: terminalLeaveStr, location: row[Object.keys(row).find(k => k.toLowerCase().includes('city, state'))] || '', transportation: row[Object.keys(row).find(k => k.toLowerCase().includes('transportation'))] || '', opportunities: row[Object.keys(row).find(k => k.toLowerCase().includes('opportunities'))] || '', skills: row[Object.keys(row).find(k => k.toLowerCase().includes('skills'))] || '', areasOfInterest: row[Object.keys(row).find(k => k.toLowerCase().includes('areas'))] || '', availability: row[Object.keys(row).find(k => k.toLowerCase().includes('availability'))] || '' }; }); setTasks(prev => [...prev, ...newTasks]); alert(`CSV loaded successfully!\n\nImported ${newTasks.length} intake forms to your INBOX.`); } else { const loadedData = JSON.parse(content); if (loadedData.tasks && Array.isArray(loadedData.tasks)) { setTasks(loadedData.tasks); if (loadedData.columnWidths) setColumnWidths(loadedData.columnWidths); if (loadedData.columnOrder) setColumnOrder(loadedData.columnOrder); if (loadedData.settings) setSettings(loadedData.settings); if (loadedData.expandedGroups) setExpandedGroups(loadedData.expandedGroups); if (loadedData.columns) setColumns(loadedData.columns); if (loadedData.customThemes) setCustomThemes(loadedData.customThemes); alert('Dashboard backup data loaded successfully!'); } } } catch (error) { alert('Error loading file: ' + error.message); } }; reader.readAsText(file); event.target.value = ''; };
+  const handleFileLoad = (event) => { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (e) => { try { const content = e.target.result; const isCSV = file.name.toLowerCase().endsWith('.csv'); if (isCSV) { const parsedData = parseCSV(content); const newTasks = parsedData.map((row, index) => { const ts = formatToYYYYMMDD(row['Timestamp'] || new Date().toISOString().split('T')[0]); const etsDateStr = formatToYYYYMMDD(row[Object.keys(row).find(k => k.toLowerCase().includes('ets'))] || ''); const terminalLeaveStr = formatToYYYYMMDD(row[Object.keys(row).find(k => k.toLowerCase().includes('terminal leave'))] || ''); return { id: Math.max(...(tasks.length ? tasks.map(t => t.id) : [0]), 0) + index + 1, group: 'group1', timestamp: ts, fullName: row[Object.keys(row).find(k => k.toLowerCase().includes('name'))] || '', phone: row[Object.keys(row).find(k => k.toLowerCase().includes('phone'))] || '', email: row[Object.keys(row).find(k => k.toLowerCase().includes('email'))] || '', currentStatus: row[Object.keys(row).find(k => k.toLowerCase().includes('current status'))] || '', branchOfService: row[Object.keys(row).find(k => k.toLowerCase().includes('branch'))] || 'Not started', followUpRequired: 'Pending', agreeToContact: row[Object.keys(row).find(k => k.toLowerCase().includes('agree'))] || '', mos: row[Object.keys(row).find(k => k.toLowerCase().includes('mos'))] || '', payGrade: row[Object.keys(row).find(k => k.toLowerCase().includes('pay grade'))] || '', etsDate: etsDateStr, terminalLeave: terminalLeaveStr, location: row[Object.keys(row).find(k => k.toLowerCase().includes('city, state'))] || '', transportation: row[Object.keys(row).find(k => k.toLowerCase().includes('transportation'))] || '', opportunities: row[Object.keys(row).find(k => k.toLowerCase().includes('opportunities'))] || '', skills: row[Object.keys(row).find(k => k.toLowerCase().includes('skills'))] || '', areasOfInterest: row[Object.keys(row).find(k => k.toLowerCase().includes('areas'))] || '', availability: row[Object.keys(row).find(k => k.toLowerCase().includes('availability'))] || '', isViewed: false }; }); setTasks(prev => [...prev, ...newTasks]); alert(`CSV loaded successfully!\n\nImported ${newTasks.length} intake forms to your INBOX.`); } else { const loadedData = JSON.parse(content); if (loadedData.tasks && Array.isArray(loadedData.tasks)) { setTasks(loadedData.tasks); if (loadedData.columnWidths) setColumnWidths(loadedData.columnWidths); if (loadedData.columnOrder) setColumnOrder(loadedData.columnOrder); if (loadedData.settings) setSettings(loadedData.settings); if (loadedData.expandedGroups) setExpandedGroups(loadedData.expandedGroups); if (loadedData.columns) setColumns(loadedData.columns); if (loadedData.customThemes) setCustomThemes(loadedData.customThemes); alert('Dashboard backup data loaded successfully!'); } } } catch (error) { alert('Error loading file: ' + error.message); } }; reader.readAsText(file); event.target.value = ''; };
   const exportJSON = () => { const dataToSave = { tasks, columnWidths, columnOrder, settings, expandedGroups, columns, customThemes, savedAt: new Date().toISOString(), version: '6.0' }; const jsonString = JSON.stringify(dataToSave, null, 2); const now = new Date(); const filename = `IMPACT-BACKUP-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}.json`; const blob = new Blob([jsonString], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); };
-  const exportCSV = () => { if(tasks.length === 0) return alert('No data to export!'); const exportColumns = columnOrder.filter(k => k !== 'drag' && k !== 'actions'); const headers = exportColumns.map(k => columns[k]?.label || k); const csvRows = tasks.map(t => exportColumns.map(k => `"${(t[k] || '').replace(/"/g, '""')}"`).join(',')); const csvContent = [headers.join(','), ...csvRows].join('\n'); const now = new Date(); const filename = `IMPACT-Export-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}.csv`; const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); };
+  
+  // UPDATED EXPORT MODAL LOGIC
+  const openExportModal = () => {
+      const initial = {};
+      Object.keys(columns).forEach(k => {
+          if(k !== 'drag' && k !== 'actions') initial[k] = true;
+      });
+      setExportSelections(initial);
+      setShowExportModal(true);
+      setShowSettings(false);
+  };
+
+  const executeExportCSV = () => { 
+      if(tasks.length === 0) return alert('No data to export!'); 
+      const selectedKeys = Object.keys(exportSelections).filter(k => exportSelections[k]);
+      if(selectedKeys.length === 0) return alert('Please select at least one column to export.');
+
+      // Maintain user's column order for the export
+      const exportColumnsKeys = columnOrder.filter(k => selectedKeys.includes(k)); 
+      
+      const headers = exportColumnsKeys.map(k => columns[k]?.label || k); 
+      const csvRows = tasks.map(t => exportColumnsKeys.map(k => `"${(t[k] || '').replace(/"/g, '""')}"`).join(',')); 
+      const csvContent = [headers.join(','), ...csvRows].join('\n'); 
+      const now = new Date(); 
+      const filename = `IMPACT-Export-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}.csv`; 
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }); 
+      const url = URL.createObjectURL(blob); 
+      const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); 
+      setShowExportModal(false);
+  };
   
   useEffect(() => { const unsubscribe = auth.onAuthStateChanged((currentUser) => { setUser(currentUser); setLoading(false); }); return () => unsubscribe(); }, []);
   
@@ -530,10 +619,10 @@ function App() {
     ); 
   };
 
-  const renderCell = (columnKey, task) => { switch (columnKey) { case 'branchOfService': return <BranchCell status={task.branchOfService || 'Not started'} taskId={task.id} isExpanded={expandedDropdown === `${task.id}-branchOfService`} onToggle={() => setExpandedDropdown(expandedDropdown === `${task.id}-branchOfService` ? null : `${task.id}-branchOfService`)} />; case 'followUpRequired': return <FollowUpCell status={task.followUpRequired || 'Pending'} taskId={task.id} isExpanded={expandedDropdown === `${task.id}-followUp`} onToggle={() => setExpandedDropdown(expandedDropdown === `${task.id}-followUp` ? null : `${task.id}-followUp`)} activeTheme={theme} />; case 'timestamp': return <InlineCalendar value={task.timestamp} onChange={v => updateTask(task.id, 'timestamp', v)} darkMode={settings.darkMode} isExpanded={expandedDropdown === `${task.id}-timestamp`} onToggle={() => setExpandedDropdown(expandedDropdown === `${task.id}-timestamp` ? null : `${task.id}-timestamp`)} />; case 'etsDate': return <InlineCalendar value={task.etsDate} onChange={v => updateTask(task.id, 'etsDate', v)} darkMode={settings.darkMode} isExpanded={expandedDropdown === `${task.id}-etsDate`} onToggle={() => setExpandedDropdown(expandedDropdown === `${task.id}-etsDate` ? null : `${task.id}-etsDate`)} />; case 'terminalLeave': return <InlineCalendar value={task.terminalLeave} onChange={v => updateTask(task.id, 'terminalLeave', v)} darkMode={settings.darkMode} isExpanded={expandedDropdown === `${task.id}-terminalLeave`} onToggle={() => setExpandedDropdown(expandedDropdown === `${task.id}-terminalLeave` ? null : `${task.id}-terminalLeave`)} />; case 'drag': return <div className="flex items-center justify-center pt-1"><GripVertical size={16} className="text-gray-400 cursor-move" /></div>; case 'actions': return <button onClick={() => confirmDelete(task)} className="text-gray-400 hover:text-red-500 p-2 rounded transition-colors"><Trash2 size={18} /></button>; default: return <EditableCell value={task[columnKey] || ''} taskId={task.id} field={columnKey} />; } };
+  const renderCell = (columnKey, task) => { switch (columnKey) { case 'branchOfService': return <BranchCell status={task.branchOfService || 'Not started'} taskId={task.id} isExpanded={expandedDropdown === `${task.id}-branchOfService`} onToggle={() => setExpandedDropdown(expandedDropdown === `${task.id}-branchOfService` ? null : `${task.id}-branchOfService`)} />; case 'followUpRequired': return <FollowUpCell status={task.followUpRequired || 'Pending'} taskId={task.id} isExpanded={expandedDropdown === `${task.id}-followUp`} onToggle={() => setExpandedDropdown(expandedDropdown === `${task.id}-followUp` ? null : `${task.id}-followUp`)} activeTheme={theme} />; case 'timestamp': return <InlineCalendar value={task.timestamp} onChange={v => updateTask(task.id, 'timestamp', v)} darkMode={settings.darkMode} isExpanded={expandedDropdown === `${task.id}-timestamp`} onToggle={() => setExpandedDropdown(expandedDropdown === `${task.id}-timestamp` ? null : `${task.id}-timestamp`)} />; case 'etsDate': return <InlineCalendar value={task.etsDate} onChange={v => updateTask(task.id, 'etsDate', v)} darkMode={settings.darkMode} isExpanded={expandedDropdown === `${task.id}-etsDate`} onToggle={() => setExpandedDropdown(expandedDropdown === `${task.id}-etsDate` ? null : `${task.id}-etsDate`)} />; case 'terminalLeave': return <InlineCalendar value={task.terminalLeave} onChange={v => updateTask(task.id, 'terminalLeave', v)} darkMode={settings.darkMode} isExpanded={expandedDropdown === `${task.id}-terminalLeave`} onToggle={() => setExpandedDropdown(expandedDropdown === `${task.id}-terminalLeave` ? null : `${task.id}-terminalLeave`)} />; case 'drag': return <div className="flex items-center justify-center pt-1"><GripVertical size={16} className="text-gray-400 cursor-move" /></div>; case 'actions': return <button onClick={(e) => { e.stopPropagation(); confirmDelete(task); }} className="text-gray-400 hover:text-red-500 p-2 rounded transition-colors"><Trash2 size={18} /></button>; default: return <EditableCell value={task[columnKey] || ''} taskId={task.id} field={columnKey} />; } };
   
   const GroupHeader = ({ title, groupId, count, bgColor }) => ( 
-    <div className="flex items-center justify-between rounded-lg mb-2 shadow-sm transition-all sticky top-0 z-30" style={{ backgroundColor: bgColor, color: getTextColor(bgColor) }} onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }} onDrop={(e) => { e.preventDefault(); if(draggedTask) { const newTasks = [...tasks]; const draggedIndex = newTasks.findIndex(t => t.id === draggedTask.id); newTasks[draggedIndex].group = groupId; setTasks(newTasks); setDraggedTask(null); } } }> 
+    <div className="flex items-center justify-between rounded-lg mb-2 shadow-sm transition-all sticky top-0 z-40" style={{ backgroundColor: bgColor, color: getTextColor(bgColor) }} onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }} onDrop={(e) => { e.preventDefault(); if(draggedTask) { const newTasks = [...tasks]; const draggedIndex = newTasks.findIndex(t => t.id === draggedTask.id); newTasks[draggedIndex].group = groupId; setTasks(newTasks); setDraggedTask(null); } } }> 
         <div className="px-4 py-3 flex items-center gap-3 sticky left-0 w-max z-20"> 
             <button onClick={() => toggleGroup(groupId)} className="hover:bg-white/20 rounded p-1 transition-colors">{expandedGroups[groupId] ? <ChevronDown /> : <ChevronRight />}</button> 
             <span className="font-semibold text-lg" style={{ fontFamily: '"Montserrat", sans-serif' }}>{title}</span><span className="bg-white/20 px-2 py-0.5 rounded-full text-sm font-medium">{count} items</span> 
@@ -614,7 +703,7 @@ function App() {
                             {expandedGroups[groupId] && ( 
                                 <div className="pb-6 min-h-[300px]"> 
                                     <table className="min-w-full" style={{ width: '100%', tableLayout: 'fixed' }}>
-                                        <thead className="sticky top-[52px] z-20 shadow-sm"> 
+                                        <thead className="sticky top-[52px] z-30 shadow-sm"> 
                                             <tr style={{ backgroundColor: settings.darkMode ? '#3a3a3a' : '#f9fafb', color: settings.darkMode ? '#ffffff' : '#111827', borderBottom: `1px solid ${settings.darkMode ? '#4a4a4a' : '#e5e7eb'}` }}> 
                                                 {columnOrder.map((columnKey) => ( 
                                                     <th key={columnKey} style={{ minWidth: `${columnWidths[columnKey]}px`, width: `${columnWidths[columnKey]}px` }} className={`px-4 py-3 text-left text-sm font-extrabold relative group/th select-none transition-all ${dragOverColumn === columnKey ? 'shadow-[inset_4px_0_0_0_#3b82f6] bg-blue-50/50' : ''}`} draggable={columnKey !== 'actions' && columnKey !== 'drag'} onDragStart={(e) => handleColumnDragStart(e, columnKey)} onDragOver={(e) => handleColumnDragOver(e, columnKey)} onDragLeave={handleColumnDragLeave} onDrop={(e) => handleColumnDrop(e, columnKey)}> 
@@ -637,12 +726,13 @@ function App() {
                                                 const currentRowBg = index % 2 === 0 ? (settings.darkMode ? '#2a2a2a' : (theme.cardBg || theme.background)) : (settings.darkMode ? `${theme.accent}25` : `${theme.accent}30`);
                                                 const rowTextColor = settings.darkMode ? '#ffffff' : getTextColor(index % 2 === 0 ? (theme.cardBg || theme.background) : theme.accent);
                                                 const isUnread = !task.isViewed;
+                                                const isRowExpanded = expandedDropdown && expandedDropdown.startsWith(`${task.id}-`);
                                                 return ( 
                                                     <tr key={task.id} 
                                                         onClick={() => { if(isUnread) updateTask(task.id, 'isViewed', true); }}
                                                         draggable="true" onDragStart={(e) => handleDragStart(e, task)} onDragEnd={handleDragEnd} onDragOver={(e) => handleDragOver(e, task)} onDragLeave={handleDragLeave} onDrop={(e) => handleDrop(e, task)} 
                                                         style={{ backgroundColor: currentRowBg, color: rowTextColor, transition: 'all 0.4s', fontFamily: '"Roboto", sans-serif', fontSize: '1.05rem' }} 
-                                                        className={`border-b cursor-move hover:brightness-110 ${isUnread ? 'row-glow' : ''}`}> 
+                                                        className={`border-b cursor-move hover:brightness-110 ${isUnread ? 'row-glow' : ''} ${isRowExpanded ? 'relative z-20' : 'relative z-0'}`}> 
                                                         {columnOrder.map((columnKey) => ( <td key={columnKey} style={{ minWidth: `${columnWidths[columnKey]}px`, width: `${columnWidths[columnKey]}px` }} className="px-4 py-3 align-top">{renderCell(columnKey, task)}</td> ))} 
                                                     </tr> 
                                                 ); 
@@ -672,6 +762,35 @@ function App() {
           </div>
       )}
       
+      {/* EXPORT MODAL */}
+      {showExportModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[70] p-4 animate-fade-in">
+              <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-3xl w-full max-h-[90vh] overflow-y-auto" style={{ backgroundColor: theme.cardBg, color: theme.textPrimary }}>
+                  <div className="flex justify-between items-center mb-6">
+                      <h2 className="text-3xl font-extrabold" style={{ fontFamily: '"Montserrat", sans-serif' }}>Export CSV</h2>
+                      <button onClick={() => setShowExportModal(false)} className="text-gray-400 hover:text-red-500 transition-colors p-2"><X size={28}/></button>
+                  </div>
+                  <p className="mb-6 opacity-80 text-lg">Select the specific columns you want to include in your downloaded Excel file:</p>
+                  
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+                      {Object.keys(columns).filter(k => k !== 'drag' && k !== 'actions').map(k => (
+                          <label key={k} className="flex items-center gap-4 cursor-pointer p-4 rounded-xl border-2 transition-all hover:brightness-95 shadow-sm" style={{ backgroundColor: exportSelections[k] ? `${theme.primary}15` : 'transparent', borderColor: exportSelections[k] ? theme.primary : (settings.darkMode ? '#4a4a4a' : '#e5e7eb') }}>
+                              <input type="checkbox" checked={!!exportSelections[k]} onChange={(e) => setExportSelections({...exportSelections, [k]: e.target.checked})} className="export-checkbox" />
+                              <span className="font-bold text-sm leading-tight" style={{ fontFamily: '"Montserrat", sans-serif' }}>{columns[k].label}</span>
+                          </label>
+                      ))}
+                  </div>
+                  
+                  <div className="flex flex-wrap gap-4 items-center border-t pt-6" style={{ borderColor: settings.darkMode ? '#4a4a4a' : '#e5e7eb' }}>
+                      <button onClick={() => setExportSelections(Object.keys(columns).filter(k => k!=='drag'&&k!=='actions').reduce((a,c) => ({...a, [c]:true}), {}))} className="px-5 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg font-bold transition-colors">Select All</button>
+                      <button onClick={() => setExportSelections({})} className="px-5 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg font-bold transition-colors">Clear All</button>
+                      <div className="flex-1"></div>
+                      <button onClick={executeExportCSV} className="px-8 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-extrabold flex items-center gap-2 shadow-lg transition-all hover:scale-105 active:scale-95 text-lg"><Download size={20}/> Download CSV</button>
+                  </div>
+              </div>
+          </div>
+      )}
+
       {showAnalytics && ( 
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"> 
             <div className="bg-white rounded-xl shadow-2xl p-8 max-w-[1400px] w-full max-h-[90vh] overflow-y-auto" style={{ backgroundColor: theme.cardBg || theme.background, fontFamily: '"Roboto", sans-serif' }}>
@@ -686,7 +805,7 @@ function App() {
                 <div className="flex flex-wrap justify-center gap-6">
                     
                     {/* ENHANCED: VOLUME OVER TIME LINE GRAPH */}
-                    <div id="widget-timeline" className="rounded-xl border shadow-sm p-6 w-full" style={{ borderColor: settings.darkMode ? '#4a4a4a' : '#e5e7eb', backgroundColor: theme.background }}> 
+                    <div id="widget-timeline" className="rounded-xl border shadow-sm p-6 w-full basis-full" style={{ borderColor: settings.darkMode ? '#4a4a4a' : '#e5e7eb', backgroundColor: theme.background }}> 
                         <div className="flex flex-wrap items-center justify-between mb-6">
                             <h4 className="text-lg font-bold flex items-center gap-2" style={{ color: theme.textPrimary }}><LineChartIcon size={20} className="text-purple-500" /> Intake Volume Over Time</h4> 
                             
@@ -853,12 +972,12 @@ function App() {
                         {(() => { const counts = tasks.reduce((acc, t) => { const b = t.educationLevel || 'Unspecified'; acc[b] = (acc[b] || 0) + 1; return acc; }, {}); return chartPresets.education === 'pie' ? <SimplePieChart data={counts} theme={theme} /> : <SimpleBarChart data={counts} theme={theme} />; })()} 
                     </div>
 
-                    <div id="widget-opps" className="rounded-xl border shadow-sm p-6 w-full" style={{ borderColor: settings.darkMode ? '#4a4a4a' : '#e5e7eb', backgroundColor: theme.background }}> 
+                    <div id="widget-opps" className="rounded-xl border shadow-sm p-6 w-full basis-full" style={{ borderColor: settings.darkMode ? '#4a4a4a' : '#e5e7eb', backgroundColor: theme.background }}> 
                         <div className="flex items-center justify-between mb-6">
                             <h4 className="text-lg font-bold flex items-center gap-2" style={{ color: theme.textPrimary }}><BarChartIcon size={20} className="text-green-500" /> Desired Opportunities</h4> 
                             <button onClick={() => handleExportPNG('widget-opps', 'Opportunities-Chart')} className="p-3 hover:bg-gray-200 rounded-xl text-blue-500 flex items-center gap-2 text-sm font-bold transition-colors"><Download size={24}/> Export PNG</button>
                         </div>
-                        {(() => { const counts = {}; tasks.forEach(t => { if (!t.opportunities) return; t.opportunities.split(',').forEach(opp => { let o = opp.trim(); if(!o) return; if(o.length > 25) o = o.substring(0, 25) + '...'; counts[o] = (counts[o] || 0) + 1; }); }); return <SimpleBarChart data={counts} theme={theme} />; })()} 
+                        <OpportunitiesWall tasks={tasks} theme={theme} />
                     </div>
                 </div>
             </div> 
@@ -878,7 +997,7 @@ function App() {
 
                             <hr className="border-purple-200"/>
 
-                            <div> <label className="block text-sm font-medium text-gray-700 mb-1">Theme Name</label> <input type="text" value={customTheme.name} onChange={(e) => setCustomTheme({ ...customTheme, name: e.target.value })} placeholder="My Awesome Theme" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" /> </div> <div className="grid grid-cols-2 gap-3"> <div><label className="block text-sm font-medium text-gray-700 mb-1">Background</label><input type="color" value={customTheme.background} onChange={(e) => setCustomTheme({ ...customTheme, background: e.target.value })} className="w-full h-10 rounded border border-gray-300 cursor-pointer" /></div> <div><label className="block text-sm font-medium text-gray-700 mb-1">Card Background</label><input type="color" value={customTheme.cardBg} onChange={(e) => setCustomTheme({ ...customTheme, cardBg: e.target.value })} className="w-full h-10 rounded border border-gray-300 cursor-pointer" /></div> <div><label className="block text-sm font-medium text-gray-700 mb-1">Primary</label><input type="color" value={customTheme.primary} onChange={(e) => setCustomTheme({ ...customTheme, primary: e.target.value })} className="w-full h-10 rounded border border-gray-300 cursor-pointer" /></div> <div><label className="block text-sm font-medium text-gray-700 mb-1">Secondary</label><input type="color" value={customTheme.secondary} onChange={(e) => setCustomTheme({ ...customTheme, secondary: e.target.value })} className="w-full h-10 rounded border border-gray-300 cursor-pointer" /></div> <div><label className="block text-sm font-medium text-gray-700 mb-1">Accent (INBOX)</label><input type="color" value={customTheme.accent} onChange={(e) => setCustomTheme({ ...customTheme, accent: e.target.value })} className="w-full h-10 rounded border border-gray-300 cursor-pointer" /></div> <div><label className="block text-sm font-medium text-gray-700 mb-1">Highlight (COMPLETED)</label><input type="color" value={customTheme.highlight} onChange={(e) => setCustomTheme({ ...customTheme, highlight: e.target.value })} className="w-full h-10 rounded border border-gray-300 cursor-pointer" /></div> </div> <button onClick={() => { if (!customTheme.name.trim()) { alert('Please enter a theme name!'); return; } if (allThemes[customTheme.name]) { alert('A theme with this name already exists!'); return; } setCustomThemes(prev => ({ ...prev, [customTheme.name]: { ...customTheme } })); setSettings({ ...settings, colorTheme: customTheme.name }); setCustomTheme({ name: '', background: '#ffffff', cardBg: '#ffffff', primary: '#3b82f6', secondary: '#8b5cf6', accent: '#10b981', highlight: '#f59e0b', dark: '#1f2937', textPrimary: '#1f2937', textSecondary: '#6b7280' }); setShowCustomThemeCreator(false); }} className="w-full py-2 px-4 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white rounded-lg font-bold transition-all">Create & Save Theme</button> </div> </div> )} </div> ) } </div> <div className="space-y-4"> <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-200"> <h4 className="font-bold text-gray-900 mb-1 flex items-center gap-2">Data Export Management</h4> <p className="text-sm text-gray-600 mb-4">Download your entire dashboard data as a JSON backup or export to Excel as a CSV.</p> <div className="space-y-3"> <button onClick={exportJSON} className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium flex justify-center items-center gap-2 transition-colors"><Save size={16} /> Export JSON (Backup)</button> <button onClick={exportCSV} className="w-full px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium flex justify-center items-center gap-2 transition-colors"><Download size={16} /> Export to Excel (CSV)</button> </div> </div> </div> </div> </div> </div> )}
+                            <div> <label className="block text-sm font-medium text-gray-700 mb-1">Theme Name</label> <input type="text" value={customTheme.name} onChange={(e) => setCustomTheme({ ...customTheme, name: e.target.value })} placeholder="My Awesome Theme" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" /> </div> <div className="grid grid-cols-2 gap-3"> <div><label className="block text-sm font-medium text-gray-700 mb-1">Background</label><input type="color" value={customTheme.background} onChange={(e) => setCustomTheme({ ...customTheme, background: e.target.value })} className="w-full h-10 rounded border border-gray-300 cursor-pointer" /></div> <div><label className="block text-sm font-medium text-gray-700 mb-1">Card Background</label><input type="color" value={customTheme.cardBg} onChange={(e) => setCustomTheme({ ...customTheme, cardBg: e.target.value })} className="w-full h-10 rounded border border-gray-300 cursor-pointer" /></div> <div><label className="block text-sm font-medium text-gray-700 mb-1">Primary</label><input type="color" value={customTheme.primary} onChange={(e) => setCustomTheme({ ...customTheme, primary: e.target.value })} className="w-full h-10 rounded border border-gray-300 cursor-pointer" /></div> <div><label className="block text-sm font-medium text-gray-700 mb-1">Secondary</label><input type="color" value={customTheme.secondary} onChange={(e) => setCustomTheme({ ...customTheme, secondary: e.target.value })} className="w-full h-10 rounded border border-gray-300 cursor-pointer" /></div> <div><label className="block text-sm font-medium text-gray-700 mb-1">Accent (INBOX)</label><input type="color" value={customTheme.accent} onChange={(e) => setCustomTheme({ ...customTheme, accent: e.target.value })} className="w-full h-10 rounded border border-gray-300 cursor-pointer" /></div> <div><label className="block text-sm font-medium text-gray-700 mb-1">Highlight (COMPLETED)</label><input type="color" value={customTheme.highlight} onChange={(e) => setCustomTheme({ ...customTheme, highlight: e.target.value })} className="w-full h-10 rounded border border-gray-300 cursor-pointer" /></div> </div> <button onClick={() => { if (!customTheme.name.trim()) { alert('Please enter a theme name!'); return; } if (allThemes[customTheme.name]) { alert('A theme with this name already exists!'); return; } setCustomThemes(prev => ({ ...prev, [customTheme.name]: { ...customTheme } })); setSettings({ ...settings, colorTheme: customTheme.name }); setCustomTheme({ name: '', background: '#ffffff', cardBg: '#ffffff', primary: '#3b82f6', secondary: '#8b5cf6', accent: '#10b981', highlight: '#f59e0b', dark: '#1f2937', textPrimary: '#1f2937', textSecondary: '#6b7280' }); setShowCustomThemeCreator(false); }} className="w-full py-2 px-4 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white rounded-lg font-bold transition-all">Create & Save Theme</button> </div> </div> )} </div> ) } </div> <div className="space-y-4"> <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-200"> <h4 className="font-bold text-gray-900 mb-1 flex items-center gap-2">Data Export Management</h4> <p className="text-sm text-gray-600 mb-4">Download your entire dashboard data as a JSON backup or export to Excel as a CSV.</p> <div className="space-y-3"> <button onClick={exportJSON} className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium flex justify-center items-center gap-2 transition-colors"><Save size={16} /> Export JSON (Backup)</button> <button onClick={openExportModal} className="w-full px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium flex justify-center items-center gap-2 transition-colors"><Download size={16} /> Export to Excel (CSV)</button> </div> </div> </div> </div> </div> </div> )}
     </div>
   );
 }

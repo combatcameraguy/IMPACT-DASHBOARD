@@ -32,24 +32,30 @@ tbody tr td > div { color: inherit; }
 /* STAGGERED ROW FADE IN - ENFORCES OPACITY 1 AT COMPLETION */
 @keyframes rowFadeIn { 
     0% { opacity: 0; transform: translateY(-15px); } 
-    100% { opacity: 1; transform: none; } 
+    100% { opacity: 1; transform: translateY(0); } 
 }
 .row-enter {
     animation: rowFadeIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-@keyframes fadeIn { 0% { opacity: 0; transform: translateY(-10px); } 100% { opacity: 1; transform: none; } }
+@keyframes fadeIn { 0% { opacity: 0; transform: translateY(-10px); } 100% { opacity: 1; transform: translateY(0); } }
 .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
 
 /* HARDWARE ACCELERATED HOVER TO PREVENT MENU FLASHING */
 .task-row {
-    transition: background-color 0.4s ease, color 0.4s ease;
+    transition: filter 0.2s ease, background-color 0.4s ease, color 0.4s ease;
 }
-.task-row td {
-    transition: filter 0.2s ease;
-}
-.task-row:hover td {
+.task-row:hover {
     filter: brightness(1.08);
+}
+
+/* OVERRIDE STACKING CONTEXT TRAP FOR EXPANDED ROWS */
+.expanded-row, .expanded-row:hover {
+    animation: none !important;
+    filter: none !important;
+    transform: none !important;
+    position: relative !important;
+    z-index: 99999 !important;
 }
 
 /* CUSTOM GLOW FOR UNREAD/NEW ITEMS */
@@ -798,7 +804,7 @@ function App() {
   };
 
   const exportJSON = () => { 
-      const dataToSave = { tasks, columnWidths, columnOrder, settings, expandedGroups, columns, customThemes, savedAt: new Date().toISOString(), version: '7.4' }; 
+      const dataToSave = { tasks, columnWidths, columnOrder, settings, expandedGroups, columns, customThemes, savedAt: new Date().toISOString(), version: '7.5' }; 
       const jsonString = JSON.stringify(dataToSave, null, 2); 
       const now = new Date(); 
       const filename = `IMPACT-BACKUP-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}.json`; 
@@ -1162,7 +1168,7 @@ function App() {
                 <span style={{ color: '#f7b512', fontSize: '1.15em' }}>IMPACT</span> Intake Dashboard
             </h1>
             <div className="flex flex-col pb-1">
-                <span className="text-sm font-medium text-gray-500">v7.4</span>
+                <span className="text-sm font-medium text-gray-500">v7.5</span>
                 <div className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: theme.textSecondary }}>
                     <div className={`w-2 h-2 rounded-full ${firebaseStatus === 'online' ? 'bg-green-500 animate-pulse' : firebaseStatus === 'offline' ? 'bg-red-500' : 'bg-yellow-500 animate-bounce'}`}></div>
                     <span>{firebaseStatus === 'online' ? 'Connected to Firebase' : firebaseStatus === 'offline' ? 'Disconnected' : 'Checking...'}</span>
@@ -1227,76 +1233,61 @@ function App() {
                             
                             {expandedGroups[groupId] && ( 
                                 <div className="pb-12 origin-top animate-fade-in"> 
-                                    <table className="min-w-full border-separate" style={{ width: '100%', tableLayout: 'fixed', borderSpacing: 0 }}>
-    <thead className="sticky top-[52px] z-30 shadow-sm"> 
-        <tr style={{ backgroundColor: settings.darkMode ? '#3a3a3a' : '#f9fafb', color: settings.darkMode ? '#ffffff' : '#111827' }}> 
-            {columnOrder.map((columnKey) => ( 
-                <th key={columnKey} 
-                    style={{ 
-                        minWidth: `${columnWidths[columnKey]}px`, 
-                        width: `${columnWidths[columnKey]}px`,
-                        borderBottom: `1px solid ${settings.darkMode ? '#4a4a4a' : '#e5e7eb'}`
-                    }} 
-                    className={`px-4 py-3 text-left text-sm font-extrabold relative group/th select-none transition-all ${dragOverColumn === columnKey ? 'shadow-[inset_4px_0_0_0_#3b82f6] bg-blue-50/50' : ''}`} draggable={columnKey !== 'actions' && columnKey !== 'drag'} onDragStart={(e) => handleColumnDragStart(e, columnKey)} onDragOver={(e) => handleColumnDragOver(e, columnKey)} onDragLeave={handleColumnDragLeave} onDrop={(e) => handleColumnDrop(e, columnKey)}> 
-                    <div className="flex items-center justify-between w-full"> 
-                        <div className="flex items-center gap-2 overflow-hidden w-full" onClick={() => { if (columnKey === 'timestamp' || columnKey === 'terminalLeave') { setSortConfig(prev => ({ key: columnKey, direction: prev.key === columnKey && prev.direction === 'desc' ? 'asc' : 'desc' })); } }} style={{ cursor: (columnKey === 'timestamp' || columnKey === 'terminalLeave') ? 'pointer' : 'default' }}> 
-                            {columns[columnKey]?.icon !== 'none' && renderIcon(columns[columnKey]?.icon)} 
-                            <span className="truncate w-full block">{columns[columnKey]?.label}</span> 
-                            {(columnKey === 'timestamp' || columnKey === 'terminalLeave') && sortConfig.key === columnKey && (
-                                <span className="text-blue-500 opacity-80">{sortConfig.direction === 'asc' ? '↑' : '↓'}</span>
-                            )}
-                        </div> 
-                    </div> 
-                    {columnKey !== 'actions' && columnKey !== 'drag' && ( 
-                        <div onMouseDown={(e) => handleResizeStart(e, columnKey)} className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize z-10" style={{ backgroundColor: resizingColumn === columnKey ? '#3b82f6' : 'transparent' }} onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.5)'} onMouseLeave={e => { if (resizingColumn !== columnKey) e.currentTarget.style.backgroundColor = 'transparent'; }} /> 
-                    )} 
-                </th> 
-            ))} 
-        </tr> 
-    </thead>
-    <tbody> 
-        {groupTasks.map((task, index) => { 
-            const currentRowBg = index % 2 === 0 ? (settings.darkMode ? '#2a2a2a' : (theme.cardBg || theme.background)) : (settings.darkMode ? `${theme.accent}25` : `${theme.accent}30`);
-            const rowTextColor = settings.darkMode ? '#ffffff' : getTextColor(index % 2 === 0 ? (theme.cardBg || theme.background) : theme.accent);
-            const isUnread = !task.isViewed;
-            const isRowExpanded = expandedDropdown && expandedDropdown.startsWith(`${task.id}-`);
-            
-            return ( 
-                <tr key={task.id} 
-                    onClick={() => { if(isUnread) updateTask(task.id, 'isViewed', true); }}
-                    draggable="true" 
-                    onDragStart={(e) => handleDragStart(e, task)} 
-                    onDragEnd={handleDragEnd} 
-                    onDragOver={(e) => handleDragOver(e, task)} 
-                    onDragLeave={handleDragLeave} 
-                    onDrop={(e) => handleDrop(e, task)} 
-                    style={{ 
-                        backgroundColor: currentRowBg, 
-                        color: rowTextColor, 
-                        fontFamily: '"Roboto", sans-serif', 
-                        fontSize: '1.05rem', 
-                        animationDelay: `${index * 0.05}s`,
-                        position: 'relative',
-                        zIndex: isRowExpanded ? 99999 : 1000 - index
-                    }} 
-                    className={`cursor-move task-row row-enter ${isUnread ? 'row-glow' : ''}`}> 
-                    {columnOrder.map((columnKey) => ( 
-                        <td key={columnKey} 
-                            style={{ 
-                                minWidth: `${columnWidths[columnKey]}px`, 
-                                width: `${columnWidths[columnKey]}px`, 
-                                zIndex: isRowExpanded ? 40 : 1,
-                                borderBottom: `1px solid ${settings.darkMode ? '#4a4a4a' : '#e5e7eb'}`
-                            }} 
-                            className="px-4 py-3 align-top relative">
-                            {renderCell(columnKey, task)}
-                        </td> 
-                    ))} 
-                </tr> 
-            ); 
-        })} 
-    </tbody>
-</table> 
+                                    <table className="min-w-full" style={{ width: '100%', tableLayout: 'fixed' }}>
+                                        <thead className="sticky top-[52px] z-30 shadow-sm"> 
+                                            <tr style={{ backgroundColor: settings.darkMode ? '#3a3a3a' : '#f9fafb', color: settings.darkMode ? '#ffffff' : '#111827', borderBottom: `1px solid ${settings.darkMode ? '#4a4a4a' : '#e5e7eb'}` }}> 
+                                                {columnOrder.map((columnKey) => ( 
+                                                    <th key={columnKey} style={{ minWidth: `${columnWidths[columnKey]}px`, width: `${columnWidths[columnKey]}px` }} className={`px-4 py-3 text-left text-sm font-extrabold relative group/th select-none transition-all ${dragOverColumn === columnKey ? 'shadow-[inset_4px_0_0_0_#3b82f6] bg-blue-50/50' : ''}`} draggable={columnKey !== 'actions' && columnKey !== 'drag'} onDragStart={(e) => handleColumnDragStart(e, columnKey)} onDragOver={(e) => handleColumnDragOver(e, columnKey)} onDragLeave={handleColumnDragLeave} onDrop={(e) => handleColumnDrop(e, columnKey)}> 
+                                                        <div className="flex items-center justify-between w-full"> 
+                                                            <div className="flex items-center gap-2 overflow-hidden w-full" onClick={() => { if (columnKey === 'timestamp' || columnKey === 'terminalLeave') { setSortConfig(prev => ({ key: columnKey, direction: prev.key === columnKey && prev.direction === 'desc' ? 'asc' : 'desc' })); } }} style={{ cursor: (columnKey === 'timestamp' || columnKey === 'terminalLeave') ? 'pointer' : 'default' }}> 
+                                                                {columns[columnKey]?.icon !== 'none' && renderIcon(columns[columnKey]?.icon)} 
+                                                                <span className="truncate w-full block">{columns[columnKey]?.label}</span> 
+                                                                {(columnKey === 'timestamp' || columnKey === 'terminalLeave') && sortConfig.key === columnKey && (
+                                                                    <span className="text-blue-500 opacity-80">{sortConfig.direction === 'asc' ? '↑' : '↓'}</span>
+                                                                )}
+                                                            </div> 
+                                                        </div> 
+                                                        {columnKey !== 'actions' && columnKey !== 'drag' && ( 
+                                                            <div onMouseDown={(e) => handleResizeStart(e, columnKey)} className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize z-10" style={{ backgroundColor: resizingColumn === columnKey ? '#3b82f6' : 'transparent' }} onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.5)'} onMouseLeave={e => { if (resizingColumn !== columnKey) e.currentTarget.style.backgroundColor = 'transparent'; }} /> 
+                                                        )} 
+                                                    </th> 
+                                                ))} 
+                                            </tr> 
+                                        </thead>
+                                        <tbody> 
+                                            {groupTasks.map((task, index) => { 
+                                                const currentRowBg = index % 2 === 0 ? (settings.darkMode ? '#2a2a2a' : (theme.cardBg || theme.background)) : (settings.darkMode ? `${theme.accent}25` : `${theme.accent}30`);
+                                                const rowTextColor = settings.darkMode ? '#ffffff' : getTextColor(index % 2 === 0 ? (theme.cardBg || theme.background) : theme.accent);
+                                                const isUnread = !task.isViewed;
+                                                const isRowExpanded = expandedDropdown && expandedDropdown.startsWith(`${task.id}-`);
+                                                
+                                                return ( 
+                                                    <tr key={task.id} 
+                                                        onClick={() => { if(isUnread) updateTask(task.id, 'isViewed', true); }}
+                                                        draggable="true" 
+                                                        onDragStart={(e) => handleDragStart(e, task)} 
+                                                        onDragEnd={handleDragEnd} 
+                                                        onDragOver={(e) => handleDragOver(e, task)} 
+                                                        onDragLeave={handleDragLeave} 
+                                                        onDrop={(e) => handleDrop(e, task)} 
+                                                        style={{ 
+                                                            backgroundColor: currentRowBg, 
+                                                            color: rowTextColor, 
+                                                            fontFamily: '"Roboto", sans-serif', 
+                                                            fontSize: '1.05rem', 
+                                                            animationDelay: `${index * 0.05}s`
+                                                        }} 
+                                                        className={`border-b cursor-move task-row row-enter ${isUnread ? 'row-glow' : ''} ${isRowExpanded ? 'expanded-row' : ''}`}> 
+                                                        {columnOrder.map((columnKey) => ( 
+                                                            <td key={columnKey} style={{ minWidth: `${columnWidths[columnKey]}px`, width: `${columnWidths[columnKey]}px`, zIndex: isRowExpanded ? 40 : 1 }} className="px-4 py-3 align-top relative">
+                                                                {renderCell(columnKey, task)}
+                                                            </td> 
+                                                        ))} 
+                                                    </tr> 
+                                                ); 
+                                            })} 
+                                        </tbody>
+                                    </table> 
                                 </div> 
                             )} 
                         </div> 

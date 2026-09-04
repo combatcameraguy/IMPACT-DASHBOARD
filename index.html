@@ -495,6 +495,7 @@ function App() {
   const [showAnalytics, setShowAnalytics] = useState(false); 
   const [expandedDropdown, setExpandedDropdown] = useState(null); 
   const [showCustomThemeCreator, setShowCustomThemeCreator] = useState(false);
+  const [editingThemeName, setEditingThemeName] = useState(null);
   const [isFaderDragging, setIsFaderDragging] = useState(false);
   const [deletedTaskToast, setDeletedTaskToast] = useState(null);
   const [selectedRowId, setSelectedRowId] = useState(null);
@@ -846,7 +847,7 @@ function App() {
   };
 
   const exportJSON = () => { 
-      const dataToSave = { tasks, columnWidths, columnOrder, settings, expandedGroups, columns, customThemes, savedAt: new Date().toISOString(), version: '7.8' }; 
+      const dataToSave = { tasks, columnWidths, columnOrder, settings, expandedGroups, columns, customThemes, savedAt: new Date().toISOString(), version: '7.9' }; 
       const jsonString = JSON.stringify(dataToSave, null, 2); 
       const now = new Date(); 
       const filename = `IMPACT-BACKUP-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}.json`; 
@@ -1212,7 +1213,7 @@ function App() {
                 <span style={{ color: '#f7b512', fontSize: '1.15em' }}>IMPACT</span> Intake Dashboard
             </h1>
             <div className="flex flex-col pb-1">
-                <span className="text-sm font-medium text-gray-500">v7.8</span>
+                <span className="text-sm font-medium text-gray-500">v7.9</span>
                 <div className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: theme.textSecondary }}>
                     <div className={`w-2 h-2 rounded-full ${firebaseStatus === 'online' ? 'bg-green-500 animate-pulse' : firebaseStatus === 'offline' ? 'bg-red-500' : 'bg-yellow-500 animate-bounce'}`}></div>
                     <span>{firebaseStatus === 'online' ? 'Connected to Firebase' : firebaseStatus === 'offline' ? 'Disconnected' : 'Checking...'}</span>
@@ -1334,7 +1335,7 @@ function App() {
                                                             fontFamily: '"Roboto", sans-serif', 
                                                             fontSize: '1.05rem', 
                                                             animationDelay: `${index * 0.05}s`,
-                                                            transition: 'all 0.3s ease'
+                                                            transition: 'background-color 0.3s ease'
                                                         }} 
                                                         className={`border-b cursor-move task-row row-enter ${isUnread ? 'row-glow' : ''}`}> 
                                                         {columnOrder.map((columnKey) => ( 
@@ -1346,7 +1347,7 @@ function App() {
                                                                 background: columnKey === 'fullName' ? `linear-gradient(${currentRowBg}, ${currentRowBg}), ${settings.darkMode ? '#2a2a2a' : (theme.cardBg || theme.background)}` : 'transparent',
                                                                 zIndex: columnKey === 'fullName' ? 40 : 1,
                                                                 boxShadow: columnKey === 'fullName' ? '4px 0 8px -2px rgba(0,0,0,0.1)' : 'none',
-                                                                transition: 'all 0.3s ease'
+                                                                transition: 'background-color 0.3s ease'
                                                             }} className="px-4 py-3 align-top">
                                                                 {renderCell(columnKey, task)}
                                                             </td> 
@@ -1643,9 +1644,28 @@ function App() {
                                   {isCustom && <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-semibold">Custom</span>}
                                 </div>
                                 {isCustom && (
-                                  <button onClick={(e) => { e.stopPropagation(); if (confirm(`Delete custom theme "${themeName}"?`)) { const updatedThemes = { ...customThemes }; delete updatedThemes[themeName]; setCustomThemes(updatedThemes); if (settings.colorTheme === themeName) { setSettings({ ...settings, colorTheme: 'Ocean Bliss' }); } } }} className="p-1.5 hover:bg-red-100 rounded transition-colors text-red-600" title="Delete this theme">
-                                    <Trash2 size={16} />
-                                  </button>
+                                  <div className="flex items-center gap-1">
+                                      <button onClick={(e) => { 
+                                          e.stopPropagation(); 
+                                          setEditingThemeName(themeName); 
+                                          setCustomTheme({ ...customThemes[themeName] }); 
+                                          setShowCustomThemeCreator(true); 
+                                      }} className="p-1.5 hover:bg-blue-100 rounded transition-colors text-blue-600" title="Edit this theme">
+                                        <Edit2 size={16} />
+                                      </button>
+                                      <button onClick={(e) => { 
+                                          e.stopPropagation(); 
+                                          if (confirm(`Delete custom theme "${themeName}"?`)) { 
+                                              const updatedThemes = { ...customThemes }; 
+                                              delete updatedThemes[themeName]; 
+                                              setCustomThemes(updatedThemes); 
+                                              if (settings.colorTheme === themeName) { setSettings({ ...settings, colorTheme: 'Ocean Bliss' }); } 
+                                              if (editingThemeName === themeName) { setShowCustomThemeCreator(false); setEditingThemeName(null); }
+                                          } 
+                                      }} className="p-1.5 hover:bg-red-100 rounded transition-colors text-red-600" title="Delete this theme">
+                                        <Trash2 size={16} />
+                                      </button>
+                                  </div>
                                 )}
                               </button>
                             </div>
@@ -1653,20 +1673,32 @@ function App() {
                         })}
                       </div>
                       
-                      <button onClick={() => setShowCustomThemeCreator(!showCustomThemeCreator)} className="w-full mt-3 py-2 px-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-lg font-medium transition-all flex items-center justify-center gap-2">
-                        <Plus size={18} /> {showCustomThemeCreator ? 'Hide Theme Creator' : 'Create Custom Theme'}
+                      <button onClick={() => {
+                          if (showCustomThemeCreator) {
+                              setShowCustomThemeCreator(false);
+                              setEditingThemeName(null);
+                          } else {
+                              setEditingThemeName(null);
+                              setCustomTheme({ name: '', background: '#ffffff', cardBg: '#ffffff', primary: '#3b82f6', secondary: '#8b5cf6', accent: '#10b981', highlight: '#f59e0b', dark: '#1f2937', textPrimary: '#1f2937', textSecondary: '#6b7280' });
+                              setShowCustomThemeCreator(true);
+                          }
+                      }} 
+                      style={{ background: `linear-gradient(to right, ${theme.primary}, ${theme.secondary})`, color: getTextColor(theme.primary) }}
+                      className="w-full mt-4 py-2 px-4 rounded-lg font-medium transition-all flex items-center justify-center gap-2 shadow-sm hover:brightness-110">
+                        {showCustomThemeCreator ? <X size={18} /> : <Plus size={18} />} 
+                        {showCustomThemeCreator ? 'Hide Theme Creator' : 'Create Custom Theme'}
                       </button>
 
                       {showCustomThemeCreator && (
-                        <div className="mt-4 p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg border-2 border-purple-300">
+                        <div className="mt-4 p-4 rounded-lg border-2 shadow-inner" style={{ backgroundColor: settings.darkMode ? '#3a3a3a' : '#f9fafb', borderColor: theme.primary }}>
                           <div className="flex items-center justify-between mb-4">
-                            <h5 className="font-bold text-gray-900 flex items-center gap-2">Custom Theme Creator</h5>
+                            <h5 className="font-bold text-gray-900 flex items-center gap-2">{editingThemeName ? 'Edit Custom Theme' : 'Custom Theme Creator'}</h5>
                           </div>
                           
                           <div className="space-y-4">
                             <div>
                               <label className="block text-sm font-medium text-gray-700 mb-1">Theme Name</label>
-                              <input type="text" value={customTheme.name} onChange={(e) => setCustomTheme({ ...customTheme, name: e.target.value })} placeholder="My Awesome Theme" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" />
+                              <input type="text" value={customTheme.name} onChange={(e) => setCustomTheme({ ...customTheme, name: e.target.value })} placeholder="My Awesome Theme" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
                             </div>
                             <div className="grid grid-cols-2 gap-3">
                               <div><label className="block text-sm font-medium text-gray-700 mb-1">Background</label><input type="color" value={customTheme.background} onChange={(e) => setCustomTheme({ ...customTheme, background: e.target.value })} className="w-full h-10 rounded border border-gray-300 cursor-pointer" /></div>
@@ -1676,7 +1708,26 @@ function App() {
                               <div><label className="block text-sm font-medium text-gray-700 mb-1">Accent (INBOX)</label><input type="color" value={customTheme.accent} onChange={(e) => setCustomTheme({ ...customTheme, accent: e.target.value })} className="w-full h-10 rounded border border-gray-300 cursor-pointer" /></div>
                               <div><label className="block text-sm font-medium text-gray-700 mb-1">Highlight (COMPLETED)</label><input type="color" value={customTheme.highlight} onChange={(e) => setCustomTheme({ ...customTheme, highlight: e.target.value })} className="w-full h-10 rounded border border-gray-300 cursor-pointer" /></div>
                             </div>
-                            <button onClick={() => { if (!customTheme.name.trim()) { alert('Please enter a theme name!'); return; } if (allThemes[customTheme.name]) { alert('A theme with this name already exists!'); return; } setCustomThemes(prev => ({ ...prev, [customTheme.name]: { ...customTheme } })); setSettings({ ...settings, colorTheme: customTheme.name }); setCustomTheme({ name: '', background: '#ffffff', cardBg: '#ffffff', primary: '#3b82f6', secondary: '#8b5cf6', accent: '#10b981', highlight: '#f59e0b', dark: '#1f2937', textPrimary: '#1f2937', textSecondary: '#6b7280' }); setShowCustomThemeCreator(false); }} className="w-full py-2 px-4 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white rounded-lg font-bold transition-all">Create & Save Theme</button>
+                            <button onClick={() => { 
+                                if (!customTheme.name.trim()) { alert('Please enter a theme name!'); return; } 
+                                if (customTheme.name !== editingThemeName && allThemes[customTheme.name]) { alert('A theme with this name already exists!'); return; } 
+                                
+                                const updatedThemes = { ...customThemes };
+                                if (editingThemeName && customTheme.name !== editingThemeName) {
+                                    delete updatedThemes[editingThemeName];
+                                }
+                                updatedThemes[customTheme.name] = { ...customTheme };
+                                
+                                setCustomThemes(updatedThemes); 
+                                setSettings({ ...settings, colorTheme: customTheme.name }); 
+                                setCustomTheme({ name: '', background: '#ffffff', cardBg: '#ffffff', primary: '#3b82f6', secondary: '#8b5cf6', accent: '#10b981', highlight: '#f59e0b', dark: '#1f2937', textPrimary: '#1f2937', textSecondary: '#6b7280' }); 
+                                setShowCustomThemeCreator(false); 
+                                setEditingThemeName(null);
+                            }} 
+                            style={{ background: `linear-gradient(to right, ${theme.accent}, ${theme.highlight})`, color: getTextColor(theme.accent) }}
+                            className="w-full py-2 px-4 rounded-lg font-bold transition-all shadow-sm hover:brightness-110">
+                              {editingThemeName ? 'Update Theme' : 'Create & Save Theme'}
+                            </button>
                           </div>
                         </div>
                       )}

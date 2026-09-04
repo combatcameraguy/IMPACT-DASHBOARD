@@ -497,6 +497,7 @@ function App() {
   const [showCustomThemeCreator, setShowCustomThemeCreator] = useState(false);
   const [isFaderDragging, setIsFaderDragging] = useState(false);
   const [deletedTaskToast, setDeletedTaskToast] = useState(null);
+  const [selectedRowId, setSelectedRowId] = useState(null);
   
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportSelections, setExportSelections] = useState({});
@@ -518,12 +519,12 @@ function App() {
   
   const initialColumnsDef = { timestamp: { label: 'Timestamp', icon: 'Calendar' }, fullName: { label: 'Full Name', icon: 'User' }, followUpRequired: { label: 'Follow Up?', icon: 'none' }, phone: { label: 'Phone Number', icon: 'none' }, email: { label: 'Email Address', icon: 'none' }, currentStatus: { label: 'Current Status', icon: 'none' }, branchOfService: { label: 'Branch of Service', icon: 'none' }, agreeToContact: { label: 'Agree to Contact', icon: 'none' }, mos: { label: 'MOS / Job Specialty', icon: 'none' }, payGrade: { label: 'Pay Grade', icon: 'none' }, etsDate: { label: 'ETS / Retirement Date', icon: 'Calendar' }, terminalLeave: { label: 'Terminal Leave Date', icon: 'Calendar' }, location: { label: 'Location (City, State)', icon: 'none' }, transportation: { label: 'Reliable Transportation?', icon: 'none' }, opportunities: { label: 'Opportunities Interested In', icon: 'none' }, educationLevel: { label: 'Education Level', icon: 'none' }, tradeSchoolDetails: { label: 'Trade School Details', icon: 'none' }, skills: { label: 'Skills/Experience', icon: 'none' }, areasOfInterest: { label: 'Areas of Interest', icon: 'none' }, availability: { label: 'Availability/Limitations', icon: 'none' }, pipelineStatus: { label: 'Pipeline Status', icon: 'none' }, drag: { label: '', icon: 'none' }, actions: { label: '', icon: 'none' } };
   const initialWidths = { timestamp: 150, fullName: 200, followUpRequired: 130, phone: 150, email: 200, currentStatus: 180, branchOfService: 180, agreeToContact: 150, mos: 200, payGrade: 120, etsDate: 150, terminalLeave: 150, location: 180, transportation: 180, opportunities: 250, educationLevel: 200, tradeSchoolDetails: 200, skills: 250, areasOfInterest: 250, availability: 250, pipelineStatus: 150, drag: 50, actions: 80 };
-  const defaultColumnOrder = [ 'drag', 'fullName', 'followUpRequired', 'branchOfService', 'email', 'phone', 'timestamp', 'agreeToContact', 'mos', 'payGrade', 'etsDate', 'terminalLeave', 'location', 'transportation', 'educationLevel', 'tradeSchoolDetails', 'opportunities', 'skills', 'areasOfInterest', 'availability', 'currentStatus', 'actions' ];
+  const defaultColumnOrder = [ 'fullName', 'drag', 'followUpRequired', 'branchOfService', 'email', 'phone', 'timestamp', 'agreeToContact', 'mos', 'payGrade', 'etsDate', 'terminalLeave', 'location', 'transportation', 'educationLevel', 'tradeSchoolDetails', 'opportunities', 'skills', 'areasOfInterest', 'availability', 'currentStatus', 'actions' ];
   
-  const [columns, setColumns] = useState(() => loadFromStorage('comcam_columns_v6', initialColumnsDef)); 
+  const [columns, setColumns] = useState(() => loadFromStorage('comcam_columns_v7', initialColumnsDef)); 
   const [tasks, setTasks] = useState(() => loadFromStorage('comcam_tasks', [])); 
-  const [columnWidths, setColumnWidths] = useState(() => loadFromStorage('comcam_columnWidths_v6', initialWidths)); 
-  const [columnOrder, setColumnOrder] = useState(() => loadFromStorage('comcam_columnOrder_v6', defaultColumnOrder)); 
+  const [columnWidths, setColumnWidths] = useState(() => loadFromStorage('comcam_columnWidths_v7', initialWidths)); 
+  const [columnOrder, setColumnOrder] = useState(() => loadFromStorage('comcam_columnOrder_v7', defaultColumnOrder)); 
   const [expandedGroups, setExpandedGroups] = useState(() => loadFromStorage('comcam_expandedGroups', { group1: true, group2: true })); 
   const [settings, setSettings] = useState(() => loadFromStorage('comcam_settings', { darkMode: false, useTheme: false, colorTheme: 'None' }));
   const [customThemes, setCustomThemes] = useState(() => loadFromStorage('comcam_customThemes', {}));
@@ -845,7 +846,7 @@ function App() {
   };
 
   const exportJSON = () => { 
-      const dataToSave = { tasks, columnWidths, columnOrder, settings, expandedGroups, columns, customThemes, savedAt: new Date().toISOString(), version: '7.6' }; 
+      const dataToSave = { tasks, columnWidths, columnOrder, settings, expandedGroups, columns, customThemes, savedAt: new Date().toISOString(), version: '7.7' }; 
       const jsonString = JSON.stringify(dataToSave, null, 2); 
       const now = new Date(); 
       const filename = `IMPACT-BACKUP-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}.json`; 
@@ -966,7 +967,7 @@ function App() {
                 const merged = { ...d }; 
                 if (!merged.followUpRequired) merged.followUpRequired = { label: 'Follow Up?', icon: 'none' }; 
                 setColumns(merged); 
-                localStorage.setItem('comcam_columns_v6', JSON.stringify(merged)); 
+                localStorage.setItem('comcam_columns_v7', JSON.stringify(merged)); 
             } 
             if (loadedCount < totalLoads) checkAllLoaded(); 
         }); 
@@ -994,11 +995,11 @@ function App() {
   }, [user]);
 
   useEffect(() => { try { localStorage.setItem('comcam_tasks', JSON.stringify(tasks)); if (user && database && initialLoadComplete) database.ref('userData/tasks').set(tasks); } catch(e){} }, [tasks, user, initialLoadComplete]);
-  useEffect(() => { try { localStorage.setItem('comcam_columnWidths_v6', JSON.stringify(columnWidths)); if (user && database && initialLoadComplete) database.ref('userData/columnWidths').set(columnWidths); } catch(e){} }, [columnWidths, user, initialLoadComplete]);
-  useEffect(() => { try { localStorage.setItem('comcam_columnOrder_v6', JSON.stringify(columnOrder)); if (user && database && initialLoadComplete) database.ref('userData/columnOrder').set(columnOrder); } catch(e){} }, [columnOrder, user, initialLoadComplete]);
+  useEffect(() => { try { localStorage.setItem('comcam_columnWidths_v7', JSON.stringify(columnWidths)); if (user && database && initialLoadComplete) database.ref('userData/columnWidths').set(columnWidths); } catch(e){} }, [columnWidths, user, initialLoadComplete]);
+  useEffect(() => { try { localStorage.setItem('comcam_columnOrder_v7', JSON.stringify(columnOrder)); if (user && database && initialLoadComplete) database.ref('userData/columnOrder').set(columnOrder); } catch(e){} }, [columnOrder, user, initialLoadComplete]);
   useEffect(() => { try { localStorage.setItem('comcam_expandedGroups', JSON.stringify(expandedGroups)); if (user && database && initialLoadComplete) database.ref('userData/expandedGroups').set(expandedGroups); } catch(e){} }, [expandedGroups, user, initialLoadComplete]);
   useEffect(() => { try { localStorage.setItem('comcam_settings', JSON.stringify(settings)); if (user && database && initialLoadComplete) database.ref('userData/settings').set(settings); } catch(e){} }, [settings, user, initialLoadComplete]);
-  useEffect(() => { try { localStorage.setItem('comcam_columns_v6', JSON.stringify(columns)); if (user && database && initialLoadComplete) database.ref('userData/columns').set(columns); } catch(e){} }, [columns, user, initialLoadComplete]);
+  useEffect(() => { try { localStorage.setItem('comcam_columns_v7', JSON.stringify(columns)); if (user && database && initialLoadComplete) database.ref('userData/columns').set(columns); } catch(e){} }, [columns, user, initialLoadComplete]);
   useEffect(() => { try { localStorage.setItem('comcam_customThemes', JSON.stringify(customThemes)); if (user && database && initialLoadComplete) database.ref('userData/customThemes').set(customThemes); } catch(e){} }, [customThemes, user, initialLoadComplete]);
   
   const handleLogin = async (e) => { 
@@ -1211,7 +1212,7 @@ function App() {
                 <span style={{ color: '#f7b512', fontSize: '1.15em' }}>IMPACT</span> Intake Dashboard
             </h1>
             <div className="flex flex-col pb-1">
-                <span className="text-sm font-medium text-gray-500">v7.6</span>
+                <span className="text-sm font-medium text-gray-500">v7.7</span>
                 <div className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: theme.textSecondary }}>
                     <div className={`w-2 h-2 rounded-full ${firebaseStatus === 'online' ? 'bg-green-500 animate-pulse' : firebaseStatus === 'offline' ? 'bg-red-500' : 'bg-yellow-500 animate-bounce'}`}></div>
                     <span>{firebaseStatus === 'online' ? 'Connected to Firebase' : firebaseStatus === 'offline' ? 'Disconnected' : 'Checking...'}</span>
@@ -1266,7 +1267,7 @@ function App() {
             </div>
         </div>
 
-        <div ref={mainScrollRef} onScroll={handleMainScroll} className="flex-1 hide-native-scroll overflow-auto w-full pb-4">
+        <div ref={mainScrollRef} onScroll={handleMainScroll} className="flex-1 hide-native-scroll overflow-auto w-full pb-4 relative">
             <div style={{ minWidth: `${totalTableWidth}px` }}>
                 {Object.entries(groups).map(([groupId, groupData]) => { 
                     const groupTasks = sortedFilteredTasks.filter(t => t.group === groupId); 
@@ -1280,7 +1281,15 @@ function App() {
                                         <thead className="sticky top-[52px] z-30 shadow-sm"> 
                                             <tr style={{ backgroundColor: settings.darkMode ? '#3a3a3a' : '#f9fafb', color: settings.darkMode ? '#ffffff' : '#111827', borderBottom: `1px solid ${settings.darkMode ? '#4a4a4a' : '#e5e7eb'}` }}> 
                                                 {columnOrder.map((columnKey) => ( 
-                                                    <th key={columnKey} style={{ minWidth: `${columnWidths[columnKey]}px`, width: `${columnWidths[columnKey]}px` }} className={`px-4 py-3 text-left text-sm font-extrabold relative group/th select-none transition-all ${dragOverColumn === columnKey ? 'shadow-[inset_4px_0_0_0_#3b82f6] bg-blue-50/50' : ''}`} draggable={columnKey !== 'actions' && columnKey !== 'drag'} onDragStart={(e) => handleColumnDragStart(e, columnKey)} onDragOver={(e) => handleColumnDragOver(e, columnKey)} onDragLeave={handleColumnDragLeave} onDrop={(e) => handleColumnDrop(e, columnKey)}> 
+                                                    <th key={columnKey} style={{ 
+                                                        minWidth: `${columnWidths[columnKey]}px`, 
+                                                        width: `${columnWidths[columnKey]}px`,
+                                                        position: columnKey === 'fullName' ? 'sticky' : 'relative',
+                                                        left: columnKey === 'fullName' ? '0px' : 'auto',
+                                                        zIndex: columnKey === 'fullName' ? 50 : 1,
+                                                        backgroundColor: columnKey === 'fullName' ? (settings.darkMode ? '#3a3a3a' : '#f9fafb') : 'inherit',
+                                                        boxShadow: columnKey === 'fullName' ? '4px 0 8px -2px rgba(0,0,0,0.1)' : 'none'
+                                                    }} className={`px-4 py-3 text-left text-sm font-extrabold group/th select-none transition-all ${dragOverColumn === columnKey ? 'shadow-[inset_4px_0_0_0_#3b82f6] bg-blue-50/50' : ''}`} draggable={columnKey !== 'actions' && columnKey !== 'drag' && columnKey !== 'fullName'} onDragStart={(e) => handleColumnDragStart(e, columnKey)} onDragOver={(e) => handleColumnDragOver(e, columnKey)} onDragLeave={handleColumnDragLeave} onDrop={(e) => handleColumnDrop(e, columnKey)}> 
                                                         <div className="flex items-center justify-between w-full"> 
                                                             <div className="flex items-center gap-2 overflow-hidden w-full" onClick={() => { if (columnKey === 'timestamp' || columnKey === 'terminalLeave') { setSortConfig(prev => ({ key: columnKey, direction: prev.key === columnKey && prev.direction === 'desc' ? 'asc' : 'desc' })); } }} style={{ cursor: (columnKey === 'timestamp' || columnKey === 'terminalLeave') ? 'pointer' : 'default' }}> 
                                                                 {columns[columnKey]?.icon !== 'none' && renderIcon(columns[columnKey]?.icon)} 
@@ -1299,13 +1308,20 @@ function App() {
                                         </thead>
                                         <tbody> 
                                             {groupTasks.map((task, index) => { 
-                                                const currentRowBg = index % 2 === 0 ? (settings.darkMode ? '#2a2a2a' : (theme.cardBg || theme.background)) : (settings.darkMode ? `${theme.accent}25` : `${theme.accent}30`);
-                                                const rowTextColor = settings.darkMode ? '#ffffff' : getTextColor(index % 2 === 0 ? (theme.cardBg || theme.background) : theme.accent);
                                                 const isUnread = !task.isViewed;
+                                                const isSelected = selectedRowId === task.id;
+                                                
+                                                // Calculate base background and selected highlight color
+                                                const baseRowBg = index % 2 === 0 ? (settings.darkMode ? '#2a2a2a' : (theme.cardBg || theme.background)) : (settings.darkMode ? `${theme.accent}25` : `${theme.accent}30`);
+                                                const currentRowBg = isSelected ? (settings.darkMode ? 'rgba(59, 130, 246, 0.35)' : 'rgba(59, 130, 246, 0.15)') : baseRowBg;
+                                                const rowTextColor = settings.darkMode ? '#ffffff' : getTextColor(index % 2 === 0 ? (theme.cardBg || theme.background) : theme.accent);
                                                 
                                                 return ( 
                                                     <tr key={task.id} 
-                                                        onClick={() => { if(isUnread) updateTask(task.id, 'isViewed', true); }}
+                                                        onClick={() => { 
+                                                            if(isUnread) updateTask(task.id, 'isViewed', true); 
+                                                            setSelectedRowId(prev => prev === task.id ? null : task.id);
+                                                        }}
                                                         draggable="true" 
                                                         onDragStart={(e) => handleDragStart(e, task)} 
                                                         onDragEnd={handleDragEnd} 
@@ -1317,11 +1333,21 @@ function App() {
                                                             color: rowTextColor, 
                                                             fontFamily: '"Roboto", sans-serif', 
                                                             fontSize: '1.05rem', 
-                                                            animationDelay: `${index * 0.05}s`
+                                                            animationDelay: `${index * 0.05}s`,
+                                                            transition: 'background-color 0.3s ease'
                                                         }} 
                                                         className={`border-b cursor-move task-row row-enter ${isUnread ? 'row-glow' : ''}`}> 
                                                         {columnOrder.map((columnKey) => ( 
-                                                            <td key={columnKey} style={{ minWidth: `${columnWidths[columnKey]}px`, width: `${columnWidths[columnKey]}px` }} className="px-4 py-3 align-top relative">
+                                                            <td key={columnKey} style={{ 
+                                                                minWidth: `${columnWidths[columnKey]}px`, 
+                                                                width: `${columnWidths[columnKey]}px`,
+                                                                position: columnKey === 'fullName' ? 'sticky' : 'relative',
+                                                                left: columnKey === 'fullName' ? '0px' : 'auto',
+                                                                backgroundColor: columnKey === 'fullName' ? currentRowBg : 'transparent',
+                                                                zIndex: columnKey === 'fullName' ? 40 : 1,
+                                                                boxShadow: columnKey === 'fullName' ? '4px 0 8px -2px rgba(0,0,0,0.1)' : 'none',
+                                                                transition: 'background-color 0.3s ease'
+                                                            }} className="px-4 py-3 align-top">
                                                                 {renderCell(columnKey, task)}
                                                             </td> 
                                                         ))} 

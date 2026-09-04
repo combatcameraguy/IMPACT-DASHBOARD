@@ -386,14 +386,29 @@ const SimpleLineChart = ({ data, theme }) => {
 // MASONRY "STICKY NOTE" OPPORTUNITIES COMPONENT
 const OpportunitiesWall = ({ tasks, theme }) => {
     const counts = {};
+    
+    // Smart Filter to group common variations together
+    const normalizeTag = (raw) => {
+        const val = raw.trim().toLowerCase();
+        const stripped = val.replace(/[-\s]/g, ''); // remove spaces and hyphens for comparison
+        
+        if (stripped === 'scriptwriting') return 'Scriptwriting';
+        if (stripped === 'videoediting') return 'Video Editing';
+        if (stripped === 'colorgrading') return 'Color Grading';
+        if (stripped === 'graphicdesign') return 'Graphic Design';
+        if (stripped === 'socialmedia') return 'Social Media';
+        if (stripped === 'cameraoperator' || stripped === 'cameraop') return 'Camera Operator';
+        
+        // Fallback: Proper Title Case for unmapped items
+        return val.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    };
+
     tasks.forEach(t => {
         if (!t.opportunities) return;
         t.opportunities.split(',').forEach(opp => {
-            let o = opp.trim().toLowerCase();
-            if (!o) return;
-            // Basic capitalization for consistency
-            o = o.charAt(0).toUpperCase() + o.slice(1);
-            counts[o] = (counts[o] || 0) + 1;
+            if (!opp.trim()) return;
+            const finalTag = normalizeTag(opp);
+            counts[finalTag] = (counts[finalTag] || 0) + 1;
         });
     });
     
@@ -847,7 +862,7 @@ function App() {
   };
 
   const exportJSON = () => { 
-      const dataToSave = { tasks, columnWidths, columnOrder, settings, expandedGroups, columns, customThemes, savedAt: new Date().toISOString(), version: '7.9' }; 
+      const dataToSave = { tasks, columnWidths, columnOrder, settings, expandedGroups, columns, customThemes, savedAt: new Date().toISOString(), version: '8.0' }; 
       const jsonString = JSON.stringify(dataToSave, null, 2); 
       const now = new Date(); 
       const filename = `IMPACT-BACKUP-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}.json`; 
@@ -1213,7 +1228,7 @@ function App() {
                 <span style={{ color: '#f7b512', fontSize: '1.15em' }}>IMPACT</span> Intake Dashboard
             </h1>
             <div className="flex flex-col pb-1">
-                <span className="text-sm font-medium text-gray-500">v7.9</span>
+                <span className="text-sm font-medium text-gray-500">v8.0</span>
                 <div className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: theme.textSecondary }}>
                     <div className={`w-2 h-2 rounded-full ${firebaseStatus === 'online' ? 'bg-green-500 animate-pulse' : firebaseStatus === 'offline' ? 'bg-red-500' : 'bg-yellow-500 animate-bounce'}`}></div>
                     <span>{firebaseStatus === 'online' ? 'Connected to Firebase' : firebaseStatus === 'offline' ? 'Disconnected' : 'Checking...'}</span>

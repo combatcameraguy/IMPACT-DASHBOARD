@@ -28,6 +28,7 @@ input[type="date"]::-webkit-datetime-edit { padding: 0.5em; }
 tbody tr td > div { color: inherit; }
 .animate-scale-in, .dropdown-content, .modal-backdrop { animation-timing-function: cubic-bezier(1.5, 0.1, 0.25, 1); animation-duration: 0.3s; }
 @keyframes slideDown { 0% { opacity: 0; transform: translateY(-20px) scale(0.95); max-height: 0; } 100% { opacity: 1; transform: translateY(0) scale(1); max-height: 600px; } }
+@keyframes accordionOpen { 0% { opacity: 0; transform: translateY(-20px) scale(0.98); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes fadeIn { 0% { opacity: 0; transform: translateY(-10px); } 100% { opacity: 1; transform: translateY(0); } }
 .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
 tbody tr { transition: all 2s cubic-bezier(0.34, 1.56, 0.64, 1); }
@@ -688,7 +689,7 @@ function App() {
                         <div key={groupId} className="border-b border-gray-200"> 
                             <GroupHeader title={groupData.title} groupId={groupId} count={groupTasks.length} bgColor={groupData.bgColor} /> 
                             {expandedGroups[groupId] && ( 
-                                <div className="pb-6 min-h-[300px]"> 
+                                <div className="pb-6 min-h-[300px] origin-top" style={{ animation: 'accordionOpen 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards' }}> 
                                     <table className="min-w-full" style={{ width: '100%', tableLayout: 'fixed' }}>
                                         <thead className="sticky top-[52px] z-30 shadow-sm"> 
                                             <tr style={{ backgroundColor: settings.darkMode ? '#3a3a3a' : '#f9fafb', color: settings.darkMode ? '#ffffff' : '#111827', borderBottom: `1px solid ${settings.darkMode ? '#4a4a4a' : '#e5e7eb'}` }}> 
@@ -726,6 +727,11 @@ function App() {
                                             })} 
                                         </tbody>
                                     </table> 
+                                    {groupId === 'group1' && ( 
+                                        <div className="p-4 flex gap-4 items-center sticky left-0 w-max"> 
+                                            <button onClick={() => addTask(groupId)} style={{ backgroundColor: theme.primary, color: getTextColor(theme.primary) }} className="py-2 px-4 rounded-lg text-sm font-semibold shadow transition-opacity hover:opacity-80 flex items-center gap-1"><Plus size={16} /> Add new item</button> 
+                                        </div> 
+                                    )} 
                                 </div> 
                             )} 
                         </div> 
